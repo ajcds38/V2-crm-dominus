@@ -1,0 +1,225 @@
+body {
+    margin: 0;
+    font-family: Arial, sans-serif;
+    background-color: #0c0f18;
+    color: #e0e0e0;
+}
+
+.sidebar {
+    background-color: #1a1a1a;
+    color: white;
+    height: 100vh;
+    width: 250px;
+    position: fixed;
+    padding-top: 20px;
+}
+
+.sidebar a {
+    display: block;
+    color: white;
+    padding: 12px 20px;
+    text-decoration: none;
+    transition: background-color 0.3s;
+}
+
+.sidebar a:hover {
+    background-color: #333;
+}
+
+.content {
+    margin-left: 250px;
+    padding: 20px;
+}
+
+.titulo-pagina {
+    font-size: 28px;
+    font-weight: bold;
+    margin-bottom: 20px;
+    color: #f0c75e;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    background-color: #1f1f1f;
+    margin-top: 20px;
+    box-shadow: 0 0 10px rgba(0,0,0,0.4);
+    border-radius: 6px;
+    overflow: hidden;
+}
+
+table th, table td {
+    border: 1px solid #444;
+    padding: 12px;
+    text-align: left;
+}
+
+table th {
+    background-color: #b8923a;
+    color: #000;
+    font-weight: bold;
+}
+
+table td {
+    color: #ddd;
+}
+
+/* Bloco dos filtros */
+.filtros-bloco {
+    border: 1px solid #d4af37;
+    border-radius: 10px;
+    padding: 10px;
+    margin-bottom: 15px;
+}
+
+/* Linha de filtros */
+.filtros-linha {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px;
+    align-items: flex-end;
+    justify-content: center;
+}
+
+/* Estilo para todos os campos de filtro */
+.form-campo {
+    display: flex;
+    flex-direction: column;
+    min-width: 150px;
+    font-weight: bold;
+    color: #f0c75e;
+}
+
+.filtro-visual {
+    background-color: #0c0f18;
+    color: #f0c75e;
+    border: 1px solid #f0c75e;
+    border-radius: 6px;
+    padding: 6px 12px;
+    font-weight: bold;
+    width: 160px;
+    margin-top: 4px;
+    transition: 0.3s;
+}
+
+.filtro-visual:focus {
+    outline: none;
+    box-shadow: 0 0 6px #f0c75e;
+}
+
+input[type="date"] {
+    background-color: #0c0f18;
+    color: #f0c75e;
+    border: 1px solid #f0c75e;
+    border-radius: 6px;
+    padding: 6px 12px;
+    font-weight: bold;
+    transition: 0.3s;
+}
+
+input[type="date"]:focus {
+    outline: none;
+    box-shadow: 0 0 6px #f0c75e;
+}
+
+/* Estilo do botão Filtrar */
+.btn-filtrar {
+    background-color: #d4af37;
+    color: #000;
+    font-weight: bold;
+    padding: 8px 16px;
+    border: none;
+    border-radius: 6px;
+    transition: 0.3s;
+}
+
+.btn-filtrar:hover {
+    background-color: #c29c30;
+    box-shadow: 0 0 6px #d4af37;
+}
+
+/* Dropdown de canal */
+.dropdown-canal {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+}
+
+.dropdown-canal label:first-of-type {
+    color: #f0c75e;
+    font-weight: bold;
+    margin-bottom: 4px;
+}
+
+.canal-toggle {
+    background-color: #000;
+    color: #d4af37;
+    border: 1px solid #d4af37;
+    padding: 6px 14px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: bold;
+    transition: 0.3s;
+}
+
+.canal-toggle:hover {
+    background-color: #1a1a1a;
+    box-shadow: 0 0 5px #d4af37;
+}
+
+.canal-dropdown {
+    display: none;
+    position: absolute;
+    top: 100%;
+    left: 0;
+    background-color: #111;
+    border: 1px solid #d4af37;
+    border-radius: 6px;
+    padding: 10px;
+    z-index: 100;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(120px, 1fr));
+    gap: 8px 20px;
+    max-height: 200px;
+    overflow-y: auto;
+    width: max-content;
+}
+
+.canal-dropdown label {
+    color: #eee;
+    font-size: 14px;
+}
+
+.canal-dropdown input[type="checkbox"] {
+    margin-right: 6px;
+    accent-color: #d4af37;
+}
+
+/* Alerta piscante */
+.alerta-blink {
+    font-size: 0.75rem;
+    font-weight: bold;
+    padding: 2px 6px;
+    margin-left: 6px;
+    border-radius: 4px;
+    animation: piscar 1s infinite;
+    display: inline-flex;
+    align-items: center;
+}
+
+/* Vermelho - projeção < 80% */
+.alerta-vermelho {
+    background-color: #ff2c2c;
+    color: white;
+}
+
+/* Amarelo - projeção entre 80% e 99.99% */
+.alerta-amarelo {
+    background-color: #f7c325;
+    color: #000;
+}
+
+@keyframes piscar {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.2; }
+}

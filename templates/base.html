@@ -1,0 +1,45 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>CRM Dominus</title>
+    <link rel="stylesheet" href="{% static 'css/style.css' %}">
+
+    <!-- Select2 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+</head>
+<body>
+    <div class="sidebar" style="width: 250px; background-color: #1a1a1a; height: 100vh; position: fixed;">
+        <div style="text-align: center; padding: 20px 0;">
+            <img src="{% static 'img/logo_dominus_sidebar.png' %}" alt="Dominus Consultoria Empresarial" style="max-width: 80%; height: auto;">
+        </div>
+        <ul style="list-style: none; padding: 0; color: white;">
+            <li><a href="/adesao/cidade/">Adesão</a></li>
+            <li><a href="/adesao/vendedor/">Adesão por Vendedor</a></li>
+            <li><a href="/ativacao/">Ativação</a></li>
+            <li><a href="/ativacao/vendedor/">Ativação por Vendedor</a></li>
+            <li><a href="/cancelamento/">Cancelamento</a></li>
+            <li><a href="/diasuteis/">Dias Úteis</a></li>
+            <li><a href="/dashboard/diaadia/">Dashboard Dia a Dia</a></li>
+        </ul>
+    </div>
+
+    <div class="content" style="margin-left: 250px; padding: 20px;">
+        {% block content %}{% endblock %}
+    </div>
+
+    <!-- JQuery + Select2 JS -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+    <script>
+        $(document).ready(function() {
+            $('.filtro-select').select2({
+                width: 'resolve',
+                placeholder: "Selecione",
+                allowClear: true
+            });
+        });
+    </script>
+</body>
+</html>

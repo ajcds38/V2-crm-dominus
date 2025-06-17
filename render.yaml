@@ -1,0 +1,22 @@
+services:
+  - type: web
+    name: crm-dominus
+    env: python
+    buildCommand: ""
+    startCommand: gunicorn crm_dominus.wsgi:application
+    envVars:
+      - key: DEBUG
+        value: False
+      - key: SECRET_KEY
+        generateValue: true
+      - key: ALLOWED_HOSTS
+        value: .onrender.com
+      - key: DATABASE_URL
+        fromDatabase:
+          name: crm-dominus-db
+          property: connectionString
+
+databases:
+  - name: crm-dominus-db
+    databaseName: dominusdb
+    user: dominususer

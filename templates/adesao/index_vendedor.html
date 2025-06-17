@@ -1,0 +1,85 @@
+
+{% extends 'base.html' %}
+{% block content %}
+<h2>Resultados por Vendedor - Adesão</h2>
+
+<form method="get" class="form-filtro">
+    <div class="form-group-inline">
+        <label for="inicio">Início:</label>
+        <input type="date" id="inicio" name="inicio" value="{{ data_inicio }}">
+    </div>
+    <div class="form-group-inline">
+        <label for="fim">Fim:</label>
+        <input type="date" id="fim" name="fim" value="{{ data_fim }}">
+    </div>
+    <div class="form-group-inline">
+        <label for="regional">Regional:</label>
+        <select name="regional" class="filtro-select">
+            <option value="">Todas</option>
+            {% for r in regionais %}
+                <option value="{{ r }}" {% if r in regionais_selecionadas %}selected{% endif %}>{{ r }}</option>
+            {% endfor %}
+        </select>
+    </div>
+    <div class="form-group-inline">
+        <label for="coordenador">Coordenador:</label>
+        <select name="coordenador" class="filtro-select">
+            <option value="">Todos</option>
+            {% for c in coordenadores %}
+                <option value="{{ c }}" {% if c in coordenadores_selecionadas %}selected{% endif %}>{{ c }}</option>
+            {% endfor %}
+        </select>
+    </div>
+    <div class="form-group-inline">
+        <label for="canal">Canal:</label>
+        <select name="canal" class="filtro-select">
+            <option value="">Todos</option>
+            {% for canal in canais %}
+                <option value="{{ canal }}" {% if canal in canais_selecionadas %}selected{% endif %}>{{ canal }}</option>
+            {% endfor %}
+        </select>
+    </div>
+    <button type="submit">Filtrar</button>
+</form>
+
+<p>Período: {{ data_inicio }} até {{ data_fim }}</p>
+
+<table>
+    <thead>
+        <tr>
+            <th>Vendedor</th>
+            <th>Canal</th>
+            <th>Meta</th>
+            <th>Realizado</th>
+            <th>Projeção</th>
+            <th>% Projeção</th>
+            <th>Ticket Médio</th>
+            <th>Produtividade</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for item in vendedores %}
+            <tr>
+                <td>{{ item.vendedor }}</td>
+                <td>{{ item.canal }}</td>
+                <td>{{ item.meta }}</td>
+                <td>{{ item.volume }}</td>
+                <td>{{ item.projecao|floatformat:0 }}</td>
+                <td>{{ item.proj_percentual|floatformat:2 }}%</td>
+                <td>{{ item.ticket_medio|floatformat:2 }}</td>
+                <td>{{ item.produtividade|floatformat:2 }}</td>
+            </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+<h3>Totais</h3>
+<ul>
+    <li><strong>Meta:</strong> {{ total_meta }}</li>
+    <li><strong>Realizado:</strong> {{ total_realizado }}</li>
+    <li><strong>Projeção:</strong> {{ total_proj }}</li>
+    <li><strong>% Projeção:</strong> {{ total_proj_percent }}</li>
+    <li><strong>Ticket Médio:</strong> {{ total_ticket }}</li>
+    <li><strong>Produtividade:</strong> {{ total_produtividade }}</li>
+</ul>
+{% endblock %}
