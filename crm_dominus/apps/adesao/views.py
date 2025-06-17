@@ -4,10 +4,19 @@ from datetime import datetime, timedelta
 import pandas as pd
 import os
 from diasuteis.models import DiasUteis
+from functools import lru_cache
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 CAMINHO_REALIZADO = os.path.join(BASE_DIR, '..', 'dados', 'adesao_realizado.xlsx')
 CAMINHO_METAS_CIDADE = os.path.join(BASE_DIR, '..', 'dados', 'metas_adesao.xlsx')
+
+@lru_cache()
+def get_df_real():
+    return pd.read_excel(CAMINHO_REALIZADO, engine="openpyxl")
+
+@lru_cache()
+def get_df_meta():
+    return pd.read_excel(CAMINHO_METAS_CIDADE, engine="openpyxl")
 
 @login_required
 def adesao(request):
@@ -23,8 +32,8 @@ def adesao(request):
     coordenadores = [c.strip().upper() for c in request.GET.getlist('coordenador') if c.strip()]
     canais = [c.strip().upper() for c in request.GET.getlist('canal') if c.strip()]
 
-    df_real = pd.read_excel(CAMINHO_REALIZADO)
-    df_metas = pd.read_excel(CAMINHO_METAS_CIDADE)
+    df_real = get_df_real()
+    df_metas = get_df_meta()
 
     df_real.columns = df_real.columns.str.strip().str.lower()
     df_metas.columns = df_metas.columns.str.strip().str.lower()
@@ -81,8 +90,8 @@ def adesao(request):
     media_produtividade = df_group['produtividade'].mean() if not df_group.empty else 0
     df_group['alerta_produtividade'] = df_group['produtividade'] < media_produtividade
 
-    df_filtros_real = pd.read_excel(CAMINHO_REALIZADO)
-    df_filtros_meta = pd.read_excel(CAMINHO_METAS_CIDADE)
+    df_filtros_real = get_df_real()
+    df_filtros_meta = get_df_meta()
 
     df_filtros_real.columns = df_filtros_real.columns.str.strip().str.lower()
     df_filtros_meta.columns = df_filtros_meta.columns.str.strip().str.lower()
@@ -124,6 +133,12 @@ def adesao(request):
     return render(request, 'adesao/index.html', context)
 
 
+from functools import lru_cache
+
+@lru_cache()
+def get_df_real_vendedor():
+    return pd.read_excel(CAMINHO_REALIZADO, engine="openpyxl")
+
 @login_required(login_url='/')
 def adesao_vendedor(request):
     hoje = datetime.today()
@@ -138,8 +153,7 @@ def adesao_vendedor(request):
     coordenadores = [c.strip().upper() for c in request.GET.getlist('coordenador') if c.strip()]
     canais = [c.strip().upper() for c in request.GET.getlist('canal') if c.strip()]
 
-    # Leitura da base original
-    df_base = pd.read_excel(CAMINHO_REALIZADO)
+    df_base = get_df_real_vendedor()
     df_base.columns = df_base.columns.str.strip().str.lower()
     for col in ['regional', 'coordenador', 'canal', 'vendedores']:
         df_base[col] = df_base[col].astype(str).str.strip().str.upper()
@@ -147,14 +161,12 @@ def adesao_vendedor(request):
     df_base['canal'] = df_base['canal'].replace({'EXTERNO': 'PAP', 'PAP': 'PAP'})
     df_base['data'] = pd.to_datetime(df_base['data'], dayfirst=True, errors='coerce')
 
-    # Filtros para exibir nas opções
     filtros = {
         'regional': sorted(df_base['regional'].dropna().unique()),
         'coordenador': sorted(df_base['coordenador'].dropna().unique()),
         'canal': sorted(df_base['canal'].dropna().unique()),
     }
 
-    # Filtro aplicado na base
     df = df_base[(df_base['data'] >= data_inicio) & (df_base['data'] <= data_fim)].copy()
     if regionais:
         df = df[df['regional'].isin(regionais)]
@@ -163,7 +175,6 @@ def adesao_vendedor(request):
     if canais:
         df = df[df['canal'].isin(canais)]
 
-    # Agrupamento por vendedor + canal
     colunas_chave = ['vendedores', 'canal']
     df_agg = df.groupby(colunas_chave).agg({
         'receita': 'sum',
@@ -186,7 +197,6 @@ def adesao_vendedor(request):
     media_produtividade = df_agg['produtividade'].mean() if not df_agg.empty else 0
     df_agg['alerta_produtividade'] = df_agg['produtividade'] < media_produtividade
 
-    # Ordenação por maior projeção
     df_agg = df_agg.sort_values(by='projecao', ascending=False)
 
     context = {
