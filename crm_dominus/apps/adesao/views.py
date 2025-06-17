@@ -7,8 +7,8 @@ from diasuteis.models import DiasUteis
 from functools import lru_cache
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-CAMINHO_REALIZADO = os.path.join(BASE_DIR, '..', 'dados', 'adesao_realizado.xlsx')
-CAMINHO_METAS_CIDADE = os.path.join(BASE_DIR, '..', 'dados', 'metas_adesao.xlsx')
+CAMINHO_REALIZADO = os.path.join(BASE_DIR, '..', 'apps', 'dados', 'adesao_realizado.xlsx')
+CAMINHO_METAS_CIDADE = os.path.join(BASE_DIR, '..', 'apps', 'dados', 'metas_adesao.xlsx')
 
 @lru_cache()
 def get_df_real():
