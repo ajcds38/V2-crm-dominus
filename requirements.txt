@@ -9,6 +9,7 @@ et_xmlfile==2.0.0
 fastapi==0.115.12
 Flask==3.1.0
 greenlet==3.2.1
+gunicorn==23.0.0
 h11==0.16.0
 idna==3.10
 itsdangerous==2.2.0
@@ -16,6 +17,7 @@ Jinja2==3.1.6
 MarkupSafe==3.0.2
 numpy==2.3.0
 openpyxl==3.1.5
+packaging==25.0
 pandas==2.3.0
 pydantic==2.11.4
 pydantic_core==2.33.2
