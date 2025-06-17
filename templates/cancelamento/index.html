@@ -1,0 +1,218 @@
+{% extends 'base.html' %}
+{% block content %}
+<h2 class="titulo-pagina">Resultados por Cidade - Cancelamento</h2>
+
+<form method="get" class="form-filtro">
+    <div class="filtros-bloco">
+        <div class="filtros-linha">
+            <div class="form-campo">
+                <label for="inicio">Início:</label>
+                <input type="date" id="inicio" name="inicio" value="{{ data_inicio }}" class="filtro-visual">
+            </div>
+
+            <div class="form-campo">
+                <label for="fim">Fim:</label>
+                <input type="date" id="fim" name="fim" value="{{ data_fim }}" class="filtro-visual">
+            </div>
+
+            <div class="form-campo">
+                <label for="regional">Regional:</label>
+                <select name="regional" id="regional" class="filtro-visual">
+                    <option value="">Todas</option>
+                    {% for r in regionais %}
+                        <option value="{{ r }}" {% if r in regionais_selecionadas %}selected{% endif %}>{{ r.title }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="form-campo">
+                <label for="coordenador">Coordenador:</label>
+                <select name="coordenador" id="coordenador" class="filtro-visual">
+                    <option value="">Todos</option>
+                    {% for c in coordenadores %}
+                        <option value="{{ c }}" {% if c in coordenadores_selecionadas %}selected{% endif %}>{{ c.title }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="form-campo dropdown-canal">
+                <label for="canal">Canal:</label>
+                <button type="button" class="filtro-visual canal-toggle" onclick="toggleDropdown()">Selecionar canais</button>
+                <div id="canalDropdown" class="canal-dropdown">
+                    {% for c in canais %}
+                        <label><input type="checkbox" name="canal" value="{{ c }}" {% if c in canais_selecionadas %}checked{% endif %}> {{ c.title }}</label>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <div class="form-campo">
+                <label style="visibility: hidden;">Enviar</label>
+                <button type="submit" class="btn-filtrar">Filtrar</button>
+            </div>
+        </div>
+    </div>
+</form>
+
+<p class="periodo"><strong>Período:</strong> {{ data_inicio }} até {{ data_fim }}</p>
+
+<table>
+    <thead>
+        <tr>
+            <th>Cidade</th>
+            <th>Limite Cancelamento</th>
+            <th>Realizado</th>
+            <th>Projeção</th>
+            <th>% Projeção</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for cidade in cidades %}
+        <tr>
+            <td>
+                {{ cidade.cidade|title }}
+                {% if cidade.cor_alerta == 'vermelho' %}
+                    <span class="alerta-blink alerta-vermelha">
+                        ⚠ ALERTA
+                    </span>
+                {% elif cidade.cor_alerta == 'amarelo' %}
+                    <span class="alerta-blink alerta-amarela">
+                        ⚠ ALERTA
+                    </span>
+                {% endif %}
+            </td>
+            <td>{{ cidade.limite_cancelamento|floatformat:0 }}</td>
+            <td>{{ cidade.volume|floatformat:0 }}</td>
+            <td>{{ cidade.projecao|floatformat:0 }}</td>
+            <td>{{ cidade.proj_percentual|floatformat:2 }}%</td>
+        </tr>
+        {% endfor %}
+        {% if cidades %}
+        <tr class="totais-row">
+            <td><strong>Totais:</strong></td>
+            <td><strong>{{ total_limite|floatformat:0 }}</strong></td>
+            <td><strong>{{ total_realizado|floatformat:0 }}</strong></td>
+            <td><strong>{{ total_proj|floatformat:0 }}</strong></td>
+            <td><strong>{{ total_proj_percent }}</strong></td>
+        </tr>
+        {% endif %}
+    </tbody>
+</table>
+
+<style>
+.filtros-bloco {
+    border: 1px solid #d4af37;
+    border-radius: 10px;
+    padding: 10px;
+    margin-bottom: 15px;
+}
+.filtros-linha {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px;
+    align-items: flex-end;
+    justify-content: center;
+}
+.form-campo {
+    display: flex;
+    flex-direction: column;
+    min-width: 160px;
+    font-weight: bold;
+    color: #f0c75e;
+}
+.filtro-visual {
+    background-color: #0c0f18;
+    color: #f0c75e;
+    border: 1px solid #f0c75e;
+    border-radius: 6px;
+    padding: 6px 12px;
+    font-weight: bold;
+    width: 160px;
+    margin-top: 4px;
+    transition: 0.3s;
+}
+.filtro-visual:focus {
+    outline: none;
+    box-shadow: 0 0 6px #f0c75e;
+}
+.dropdown-canal {
+    position: relative;
+}
+.canal-toggle {
+    width: 160px;
+}
+.canal-dropdown {
+    display: none;
+    position: absolute;
+    top: 100%;
+    left: 0;
+    background-color: #111;
+    border: 1px solid #d4af37;
+    border-radius: 6px;
+    padding: 10px;
+    z-index: 100;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(120px, 1fr));
+    gap: 8px 20px;
+    max-height: 200px;
+    overflow-y: auto;
+    width: max-content;
+}
+.canal-dropdown label {
+    color: #eee;
+    font-size: 14px;
+}
+.canal-dropdown input[type="checkbox"] {
+    margin-right: 6px;
+    accent-color: #d4af37;
+}
+.btn-filtrar {
+    background-color: #d4af37;
+    color: #000;
+    font-weight: bold;
+    padding: 8px 16px;
+    border: none;
+    border-radius: 6px;
+    transition: 0.3s;
+}
+.btn-filtrar:hover {
+    background-color: #c29c30;
+    box-shadow: 0 0 6px #d4af37;
+}
+.alerta-blink {
+    font-size: 0.75rem;
+    font-weight: bold;
+    padding: 2px 6px;
+    margin-left: 6px;
+    border-radius: 4px;
+    animation: piscar 1s infinite;
+    display: inline-flex;
+    align-items: center;
+}
+.alerta-vermelha {
+    background-color: #ff2c2c;
+    color: white;
+}
+.alerta-amarela {
+    background-color: #ffc107;
+    color: black;
+}
+@keyframes piscar {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.2; }
+}
+</style>
+
+<script>
+function toggleDropdown() {
+    const dropdown = document.getElementById("canalDropdown");
+    dropdown.style.display = dropdown.style.display === "grid" ? "none" : "grid";
+}
+window.addEventListener("click", function(e) {
+    const dropdown = document.getElementById("canalDropdown");
+    const toggleBtn = document.querySelector(".canal-toggle");
+    if (!dropdown.contains(e.target) && !toggleBtn.contains(e.target)) {
+        dropdown.style.display = "none";
+    }
+});
+</script>
+{% endblock %}

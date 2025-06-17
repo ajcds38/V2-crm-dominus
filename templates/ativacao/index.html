@@ -1,0 +1,153 @@
+{% extends 'base.html' %}
+{% block content %}
+<h2 class="titulo-pagina">Resultados por Cidade - Ativação</h2>
+
+<form method="get" class="form-filtro">
+    <div class="filtros-bloco">
+        <div class="filtros-linha">
+            <div class="form-campo">
+                <label for="inicio">Início:</label>
+                <input type="date" id="inicio" name="inicio" value="{{ data_inicio }}" class="filtro-visual">
+            </div>
+
+            <div class="form-campo">
+                <label for="fim">Fim:</label>
+                <input type="date" id="fim" name="fim" value="{{ data_fim }}" class="filtro-visual">
+            </div>
+
+            <div class="form-campo">
+                <label for="regional">Regional:</label>
+                <select name="regional" id="regional" class="filtro-visual">
+                    <option value="">Todas</option>
+                    {% for r in regionais %}
+                        <option value="{{ r }}" {% if r in regionais_selecionadas %}selected{% endif %}>{{ r.title }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="form-campo">
+                <label for="coordenador">Coordenador:</label>
+                <select name="coordenador" id="coordenador" class="filtro-visual">
+                    <option value="">Todos</option>
+                    {% for c in coordenadores %}
+                        <option value="{{ c }}" {% if c in coordenadores_selecionadas %}selected{% endif %}>{{ c.title }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="form-campo dropdown-canal">
+                <label for="canal">Canal:</label>
+                <button type="button" class="filtro-visual canal-toggle" onclick="toggleDropdown()">Selecionar canais</button>
+                <div id="canalDropdown" class="canal-dropdown">
+                    {% for c in canais %}
+                        <label><input type="checkbox" name="canal" value="{{ c }}" {% if c in canais_selecionadas %}checked{% endif %}> {{ c.title }}</label>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <div class="form-campo">
+                <label style="visibility: hidden;">Enviar</label>
+                <button type="submit" class="btn-filtrar">Filtrar</button>
+            </div>
+        </div>
+    </div>
+</form>
+
+<p class="periodo"><strong>Período:</strong> {{ data_inicio }} até {{ data_fim }}</p>
+
+<table>
+    <thead>
+        <tr>
+            <th>Cidade</th>
+            <th>Canal</th>
+            <th>Meta</th>
+            <th>Realizado</th>
+            <th>Projeção</th>
+            <th>% Projeção</th>
+            <th>Produtividade</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for cidade in cidades %}
+        <tr>
+            <td>
+                {{ cidade.cidade|title }}
+                {% if cidade.alerta_projecao == 'vermelho' %}
+                <span class="alerta-blink alerta-vermelho">
+                    <svg xmlns="http://www.w3.org/2000/svg" height="14" viewBox="0 0 24 24" width="14" fill="#fff" style="vertical-align: middle; margin-right: 3px;">
+                        <path d="M1 21h22L12 2 1 21zm12-3h-2v2h2v-2zm0-8h-2v6h2v-6z"/>
+                    </svg>
+                    ALERTA
+                </span>
+                {% elif cidade.alerta_projecao == 'amarelo' %}
+                <span class="alerta-blink alerta-amarelo">
+                    <svg xmlns="http://www.w3.org/2000/svg" height="14" viewBox="0 0 24 24" width="14" fill="#000" style="vertical-align: middle; margin-right: 3px;">
+                        <path d="M1 21h22L12 2 1 21zm12-3h-2v2h2v-2zm0-8h-2v6h2v-6z"/>
+                    </svg>
+                    ALERTA
+                </span>
+                {% endif %}
+            </td>
+            <td>{{ cidade.canal|title }}</td>
+            <td>{{ cidade.meta|floatformat:0 }}</td>
+            <td>{{ cidade.volume|floatformat:0 }}</td>
+            <td>{{ cidade.projecao|floatformat:0 }}</td>
+            <td>{{ cidade.proj_percentual|floatformat:2 }}%</td>
+            <td>{{ cidade.produtividade|floatformat:2 }}</td>
+        </tr>
+        {% endfor %}
+        {% if cidades %}
+        <tr class="totais-row">
+            <td colspan="2"><strong>Totais:</strong></td>
+            <td><strong>{{ total_meta|floatformat:0 }}</strong></td>
+            <td><strong>{{ total_realizado|floatformat:0 }}</strong></td>
+            <td><strong>{{ total_proj|floatformat:0 }}</strong></td>
+            <td><strong>{{ total_proj_percent }}</strong></td>
+            <td><strong>{{ total_produtividade }}</strong></td>
+        </tr>
+        {% endif %}
+    </tbody>
+</table>
+
+<style>
+.alerta-blink {
+    font-size: 0.75rem;
+    font-weight: bold;
+    padding: 2px 6px;
+    margin-left: 6px;
+    border-radius: 4px;
+    animation: piscar 1s infinite;
+    display: inline-flex;
+    align-items: center;
+}
+
+.alerta-vermelho {
+    background-color: #ff2c2c;
+    color: white;
+}
+
+.alerta-amarelo {
+    background-color: #f7c325;
+    color: #000;
+}
+
+@keyframes piscar {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.2; }
+}
+</style>
+
+<script>
+function toggleDropdown() {
+    const dropdown = document.getElementById("canalDropdown");
+    dropdown.style.display = dropdown.style.display === "grid" ? "none" : "grid";
+}
+window.addEventListener("click", function(e) {
+    const dropdown = document.getElementById("canalDropdown");
+    const toggleBtn = document.querySelector(".canal-toggle");
+    if (!dropdown.contains(e.target) && !toggleBtn.contains(e.target)) {
+        dropdown.style.display = "none";
+    }
+});
+</script>
+{% endblock %}

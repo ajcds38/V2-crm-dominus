@@ -1,0 +1,152 @@
+{% extends 'base.html' %}
+{% block content %}
+<h2 class="titulo-pagina">Configuração de Dias Úteis</h2>
+
+<form method="post" class="form-filtro">
+    {% csrf_token %}
+    <div class="filtros-bloco">
+
+        <!-- Linha 1: datas -->
+        <div class="filtros-linha">
+            <div class="form-campo">
+                <label for="data_inicio">Data Início:</label>
+                <input type="date" id="data_inicio" name="data_inicio" class="filtro-visual" value="{{ form.data_inicio.value|default_if_none:'' }}">
+            </div>
+
+            <div class="form-campo">
+                <label for="data_fim">Data Fim:</label>
+                <input type="date" id="data_fim" name="data_fim" class="filtro-visual" value="{{ form.data_fim.value|default_if_none:'' }}">
+            </div>
+        </div>
+
+        <!-- Linha 2: feriados -->
+        <div class="filtros-linha">
+            <div class="form-campo" style="flex: 1;">
+                <label for="feriados">Feriados:</label>
+                <input type="text" id="feriados" name="feriados" class="filtro-visual" placeholder="01/05/2025, 20/06/2025" value="{{ form.feriados.value|default_if_none:'' }}">
+            </div>
+        </div>
+
+        <!-- Linha 3: checkboxes -->
+        <div class="filtros-linha">
+            <div class="form-campo" style="flex-direction: row; align-items: center; gap: 8px;">
+                <input type="checkbox" id="ignorar_domingos" name="ignorar_domingos" {% if form.ignorar_domingos.value %}checked{% endif %}>
+                <label for="ignorar_domingos" style="margin: 0;">Ignorar domingos</label>
+            </div>
+
+            <div class="form-campo" style="flex-direction: row; align-items: center; gap: 8px;">
+                <input type="checkbox" id="incluir_feriados" name="incluir_feriados" {% if form.incluir_feriados.value %}checked{% endif %}>
+                <label for="incluir_feriados" style="margin: 0;">Incluir feriados</label>
+            </div>
+        </div>
+
+        <!-- Linha 4: botão -->
+        <div class="filtros-linha" style="justify-content: flex-end;">
+            <button type="submit" class="btn-filtrar">Salvar</button>
+        </div>
+    </div>
+
+    <small style="color: #aaa;">Insira as datas dos feriados separadas por vírgula (ex: 01/05/2025, 20/06/2025)</small>
+</form>
+
+<hr style="border-color: #333;">
+<h4 style="color: #f0c75e;">Resumo:</h4>
+<div id="resumo-dias">
+    <ul>
+        <li><strong>Total de dias úteis:</strong> {{ total_dias }}</li>
+        <li><strong>Dias úteis passados:</strong> {{ dias_passados }}</li>
+        <li><strong>Dias úteis restantes:</strong> {{ dias_restantes }}</li>
+    </ul>
+</div>
+
+<style>
+.filtros-bloco {
+    border: 1px solid #d4af37;
+    border-radius: 10px;
+    padding: 20px;
+    background-color: #1a1a1a;
+    margin-bottom: 20px;
+}
+
+.filtros-linha {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 24px;
+    align-items: flex-end;
+    justify-content: flex-start;
+    margin-bottom: 20px;
+}
+
+.form-campo {
+    display: flex;
+    flex-direction: column;
+    min-width: 180px;
+    font-weight: bold;
+    color: #f0c75e;
+}
+
+.filtro-visual {
+    background-color: #0c0f18;
+    color: #f0c75e;
+    border: 1px solid #f0c75e;
+    border-radius: 6px;
+    padding: 6px 12px;
+    font-weight: bold;
+    width: 100%;
+    margin-top: 4px;
+    transition: 0.3s;
+}
+
+.filtro-visual:focus {
+    outline: none;
+    box-shadow: 0 0 6px #f0c75e;
+}
+
+.btn-filtrar {
+    background-color: #d4af37;
+    color: #000;
+    font-weight: bold;
+    padding: 8px 20px;
+    border: none;
+    border-radius: 6px;
+    transition: 0.3s;
+}
+
+.btn-filtrar:hover {
+    background-color: #c29c30;
+    box-shadow: 0 0 6px #d4af37;
+}
+</style>
+
+<script>
+function atualizarResumoDiasUteis() {
+    const dataInicio = document.getElementById('data_inicio').value;
+    const dataFim = document.getElementById('data_fim').value;
+    const ignorarDomingos = document.getElementById('ignorar_domingos').checked;
+    const incluirFeriados = document.getElementById('incluir_feriados').checked;
+    const feriados = document.getElementById('feriados').value;
+
+    fetch(`/diasuteis/calcular/?data_inicio=${dataInicio}&data_fim=${dataFim}&ignorar_domingos=${ignorarDomingos}&incluir_feriados=${incluirFeriados}&feriados=${encodeURIComponent(feriados)}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.erro) {
+                document.getElementById('resumo-dias').innerHTML = '<p style="color:red;">Erro no cálculo</p>';
+            } else {
+                document.getElementById('resumo-dias').innerHTML = `
+                    <ul>
+                        <li><strong>Total de dias úteis:</strong> ${data.total}</li>
+                        <li><strong>Dias úteis passados:</strong> ${data.passados}</li>
+                        <li><strong>Dias úteis restantes:</strong> ${data.restantes}</li>
+                    </ul>
+                `;
+            }
+        });
+}
+
+document.getElementById('data_inicio').addEventListener('change', atualizarResumoDiasUteis);
+document.getElementById('data_fim').addEventListener('change', atualizarResumoDiasUteis);
+document.getElementById('feriados').addEventListener('input', atualizarResumoDiasUteis);
+document.getElementById('ignorar_domingos').addEventListener('change', atualizarResumoDiasUteis);
+document.getElementById('incluir_feriados').addEventListener('change', atualizarResumoDiasUteis);
+</script>
+{% endblock %}

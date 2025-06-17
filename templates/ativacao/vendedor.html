@@ -1,0 +1,123 @@
+
+{% extends 'base.html' %}
+{% block content %}
+<h2 class="titulo-pagina">Resultados por Vendedor - Ativação</h2>
+
+<form method="get" class="form-filtro">
+    <div class="filtros-bloco">
+        <div class="filtros-linha">
+            <div class="form-campo">
+                <label for="inicio">Início:</label>
+                <input type="date" id="inicio" name="inicio" value="{{ data_inicio }}" class="filtro-visual">
+            </div>
+
+            <div class="form-campo">
+                <label for="fim">Fim:</label>
+                <input type="date" id="fim" name="fim" value="{{ data_fim }}" class="filtro-visual">
+            </div>
+
+            <div class="form-campo">
+                <label for="regional">Regional:</label>
+                <select name="regional" id="regional" class="filtro-visual">
+                    <option value="">Todas</option>
+                    {% for r in regionais %}
+                        <option value="{{ r }}" {% if r in regionais_selecionadas %}selected{% endif %}>{{ r.title }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="form-campo">
+                <label for="coordenador">Coordenador:</label>
+                <select name="coordenador" id="coordenador" class="filtro-visual">
+                    <option value="">Todos</option>
+                    {% for c in coordenadores %}
+                        <option value="{{ c }}" {% if c in coordenadores_selecionadas %}selected{% endif %}>{{ c.title }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="form-campo dropdown-canal">
+                <label for="canal">Canal:</label>
+                <button type="button" class="filtro-visual canal-toggle" onclick="toggleDropdown()">Selecionar canais</button>
+                <div id="canalDropdown" class="canal-dropdown">
+                    {% for c in canais %}
+                        <label><input type="checkbox" name="canal" value="{{ c }}" {% if c in canais_selecionadas %}checked{% endif %}> {{ c.title }}</label>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <div class="form-campo">
+                <label style="visibility: hidden;">Enviar</label>
+                <button type="submit" class="btn-filtrar" onclick="fecharDropdown()">Filtrar</button>
+            </div>
+        </div>
+    </div>
+</form>
+
+<p class="periodo"><strong>Período:</strong> {{ data_inicio }} até {{ data_fim }}</p>
+
+<table>
+    <thead>
+        <tr>
+            <th>Vendedor</th>
+            <th>Canal</th>
+            <th>Meta</th>
+            <th>Realizado</th>
+            <th>Projeção</th>
+            <th>% Projeção</th>
+            <th>Ticket Médio</th>
+            <th>Produtividade</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for cidade in cidades %}
+        <tr>
+            <td>
+                {{ cidade.vendedores|title }}
+                {% if cidade.proj_percentual < 80 %}
+                    <span class="alerta-blink alerta-vermelho">⚠️ ALERTA</span>
+                {% elif cidade.proj_percentual < 100 %}
+                    <span class="alerta-blink alerta-amarelo">⚠️ ALERTA</span>
+                {% endif %}
+            </td>
+            <td>{{ cidade.canal|title }}</td>
+            <td>{{ cidade.meta|floatformat:0 }}</td>
+            <td>{{ cidade.volume|floatformat:0 }}</td>
+            <td>{{ cidade.projecao|floatformat:0 }}</td>
+            <td>{{ cidade.proj_percentual|floatformat:2 }}%</td>
+            <td>{{ cidade.ticket_medio|floatformat:2 }}</td>
+            <td>{{ cidade.produtividade|floatformat:2 }}</td>
+        </tr>
+        {% endfor %}
+        {% if cidades %}
+        <tr class="totais-row">
+            <td colspan="2"><strong>Totais:</strong></td>
+            <td><strong>{{ total_meta|floatformat:0 }}</strong></td>
+            <td><strong>{{ total_realizado|floatformat:0 }}</strong></td>
+            <td><strong>{{ total_proj|floatformat:0 }}</strong></td>
+            <td><strong>{{ total_proj_percent }}</strong></td>
+            <td><strong>{{ total_ticket }}</strong></td>
+            <td><strong>{{ total_produtividade }}</strong></td>
+        </tr>
+        {% endif %}
+    </tbody>
+</table>
+
+<script>
+function toggleDropdown() {
+    const dropdown = document.getElementById("canalDropdown");
+    dropdown.style.display = dropdown.style.display === "grid" ? "none" : "grid";
+}
+function fecharDropdown() {
+    const dropdown = document.getElementById("canalDropdown");
+    dropdown.style.display = "none";
+}
+window.addEventListener("click", function(e) {
+    const dropdown = document.getElementById("canalDropdown");
+    const toggleBtn = document.querySelector(".canal-toggle");
+    if (!dropdown.contains(e.target) && !toggleBtn.contains(e.target)) {
+        dropdown.style.display = "none";
+    }
+});
+</script>
+{% endblock %}
