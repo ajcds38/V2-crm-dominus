@@ -5,6 +5,17 @@ import os
 from datetime import datetime, timedelta
 from django.conf import settings
 from diasuteis.models import DiasUteis
+from functools import lru_cache
+
+@lru_cache()
+def get_df_real():
+    caminho = os.path.join(settings.BASE_DIR, 'crm_dominus', 'apps', 'dados', 'adesao_realizado.xlsx')
+    return pd.read_excel(caminho)
+
+@lru_cache()
+def get_df_meta():
+    caminho = os.path.join(settings.BASE_DIR, 'crm_dominus', 'apps', 'dados', 'metas_adesao.xlsx')
+    return pd.read_excel(caminho)
 
 @login_required(login_url='/')
 def dashboard_diaadia(request):
@@ -14,12 +25,8 @@ def dashboard_diaadia(request):
     coordenador = request.GET.get('coordenador', '').strip().lower()
     canais = [c.strip().lower() for c in request.GET.getlist('canais')]
 
-    base_path = os.path.join(settings.BASE_DIR, 'crm_dominus', 'apps', 'dados')
-    realizado_path = os.path.join(base_path, 'adesao_realizado.xlsx')
-    meta_path = os.path.join(base_path, 'metas_adesao.xlsx')
-
-    df_real = pd.read_excel(realizado_path)
-    df_meta = pd.read_excel(meta_path)
+    df_real = get_df_real()
+    df_meta = get_df_meta()
 
     df_real.columns = df_real.columns.str.strip().str.lower()
     df_meta.columns = df_meta.columns.str.strip().str.lower()
@@ -31,7 +38,6 @@ def dashboard_diaadia(request):
     for col in ['cidade', 'regional', 'coordenador', 'canal']:
         if col in df_real.columns:
             df_real[col] = df_real[col].astype(str).str.strip().str.lower().str.replace('\xa0', ' ')
-    for col in ['cidade', 'canal', 'regional', 'coordenador']:
         if col in df_meta.columns:
             df_meta[col] = df_meta[col].astype(str).str.strip().str.lower().str.replace('\xa0', ' ')
 
@@ -55,12 +61,10 @@ def dashboard_diaadia(request):
 
     if regional:
         df_real = df_real[df_real['regional'] == regional]
-        if 'regional' in df_meta.columns:
-            df_meta = df_meta[df_meta['regional'] == regional]
+        df_meta = df_meta[df_meta['regional'] == regional]
     if coordenador:
         df_real = df_real[df_real['coordenador'] == coordenador]
-        if 'coordenador' in df_meta.columns:
-            df_meta = df_meta[df_meta['coordenador'] == coordenador]
+        df_meta = df_meta[df_meta['coordenador'] == coordenador]
     if canais:
         df_real = df_real[df_real['canal'].isin(canais)]
         df_meta = df_meta[df_meta['canal'].isin(canais)]
@@ -100,27 +104,19 @@ def dashboard_diaadia(request):
         for dia in colunas_dias
     }
 
-    if not df_tabela.empty:
-        total_realizado = df_tabela.sum(axis=0)
-        total_realizado.name = 'Total Realizado'
-        df_tabela = pd.concat([df_tabela, total_realizado.to_frame().T])
+    if df_tabela.shape[1] > 0:
+        df_tabela.loc['Total Realizado'] = df_tabela.sum(axis=0)
 
     alerta_por_data = {
         dia: (
             'vermelho' if diaria_entregue_por_dia.get(dia, 0) < 80 else
             'amarelo' if diaria_entregue_por_dia.get(dia, 0) < 100 else ''
-        )
-        for dia in colunas_dias
+        ) for dia in colunas_dias
     }
 
-    df_base = pd.read_excel(realizado_path)
-    df_base.columns = df_base.columns.str.strip().str.lower()
-    for col in ['regional', 'coordenador', 'canal']:
-        df_base[col] = df_base[col].astype(str).str.strip().str.lower().str.replace('\xa0', ' ')
-
-    regionais = sorted(df_base['regional'].dropna().unique())
-    coordenadores = sorted(df_base['coordenador'].dropna().unique())
-    canais_disponiveis = sorted(df_base['canal'].dropna().unique())
+    regionais = sorted(df_real['regional'].dropna().unique())
+    coordenadores = sorted(df_real['coordenador'].dropna().unique())
+    canais_disponiveis = sorted(df_real['canal'].dropna().unique())
 
     context = {
         'tabela': df_tabela.reset_index().rename(columns={'index': 'canal'}).to_dict(orient='records'),
