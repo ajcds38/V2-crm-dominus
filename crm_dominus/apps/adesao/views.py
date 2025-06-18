@@ -45,21 +45,20 @@ def adesao(request):
         if col in df_metas.columns:
             df_metas[col] = df_metas[col].astype(str).str.strip().str.upper()
 
-    canal_padrao = {
-        'EXTERNO': 'PAP',
-        'PAP': 'PAP'
-    }
-    df_real['canal'] = df_real['canal'].map(canal_padrao).fillna(df_real['canal'])
-    df_metas['canal'] = df_metas['canal'].map(canal_padrao).fillna(df_metas['canal'])
+    df_real['canal'] = df_real['canal'].replace({'EXTERNO': 'PAP', 'PAP': 'PAP'})
+    df_metas['canal'] = df_metas['canal'].replace({'EXTERNO': 'PAP', 'PAP': 'PAP'})
 
     df_real['data'] = pd.to_datetime(df_real['data'], dayfirst=True, errors='coerce')
     df_real = df_real[(df_real['data'] >= data_inicio) & (df_real['data'] <= data_fim)]
 
+    # APLICA FILTROS EM AMBAS AS BASES
     if regionais:
         df_real = df_real[df_real['regional'].isin(regionais)]
+        df_metas = df_metas[df_metas['regional'].isin(regionais)]
 
     if coordenadores:
         df_real = df_real[df_real['coordenador'].isin(coordenadores)]
+        df_metas = df_metas[df_metas['coordenador'].isin(coordenadores)]
 
     if canais:
         df_real = df_real[df_real['canal'].isin(canais)]
@@ -89,6 +88,7 @@ def adesao(request):
     media_produtividade = df_group['produtividade'].mean() if not df_group.empty else 0
     df_group['alerta_produtividade'] = df_group['produtividade'] < media_produtividade
 
+    # FILTROS DINÂMICOS
     df_filtros_real = get_df_real()
     df_filtros_meta = get_df_meta()
 
@@ -101,8 +101,8 @@ def adesao(request):
         if col in df_filtros_meta.columns:
             df_filtros_meta[col] = df_filtros_meta[col].astype(str).str.strip().str.upper()
 
-    df_filtros_real['canal'] = df_filtros_real['canal'].map(canal_padrao).fillna(df_filtros_real['canal'])
-    df_filtros_meta['canal'] = df_filtros_meta['canal'].map(canal_padrao).fillna(df_filtros_meta['canal'])
+    df_filtros_real['canal'] = df_filtros_real['canal'].replace({'EXTERNO': 'PAP', 'PAP': 'PAP'})
+    df_filtros_meta['canal'] = df_filtros_meta['canal'].replace({'EXTERNO': 'PAP', 'PAP': 'PAP'})
 
     df_filtros = pd.concat([df_filtros_real, df_filtros_meta], ignore_index=True)
 
@@ -116,9 +116,9 @@ def adesao(request):
         'total_meta': int(df_group['meta'].sum()),
         'total_realizado': int(df_group['volume'].sum()),
         'total_proj': int(df_group['projecao'].sum()),
-        'total_proj_percent': f"{(df_group['projecao'].sum() / df_group['meta'].sum()) * 100:.2f}%" if df_group['meta'].sum() > 0 else "0.00%",
-        'total_ticket': f"{(df_group['receita'].sum() / df_group['volume'].sum()):.2f}" if df_group['volume'].sum() > 0 else "0.00",
-        'total_produtividade': f"{(df_group['volume'].sum() / df_group['vendedores'].sum()):.2f}" if df_group['vendedores'].sum() > 0 else "0.00",
+        'total_proj_percent': f\"{(df_group['projecao'].sum() / df_group['meta'].sum()) * 100:.2f}%\" if df_group['meta'].sum() > 0 else \"0.00%\",
+        'total_ticket': f\"{(df_group['receita'].sum() / df_group['volume'].sum()):.2f}\" if df_group['volume'].sum() > 0 else \"0.00\",
+        'total_produtividade': f\"{(df_group['volume'].sum() / df_group['vendedores'].sum()):.2f}\" if df_group['vendedores'].sum() > 0 else \"0.00\",
         'data_inicio': data_inicio.strftime('%Y-%m-%d'),
         'data_fim': data_fim.strftime('%Y-%m-%d'),
         'regionais': filtros.get('regional', []),
