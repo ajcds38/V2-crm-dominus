@@ -7,7 +7,7 @@ from django.conf import settings
 from diasuteis.models import DiasUteis
 from functools import lru_cache
 
-# CAMINHOS ABSOLUTOS CORRETOS PARA PRODUÇÃO (Render)
+# CAMINHOS PARA PRODUÇÃO
 CAMINHO_REALIZADO = os.path.join(settings.BASE_DIR, 'crm_dominus', 'apps', 'dados', 'adesao_realizado.xlsx')
 CAMINHO_METAS_CIDADE = os.path.join(settings.BASE_DIR, 'crm_dominus', 'apps', 'dados', 'metas_adesao.xlsx')
 
@@ -51,7 +51,6 @@ def adesao(request):
     df_real['data'] = pd.to_datetime(df_real['data'], dayfirst=True, errors='coerce')
     df_real = df_real[(df_real['data'] >= data_inicio) & (df_real['data'] <= data_fim)]
 
-    # APLICA FILTROS EM AMBAS AS BASES
     if regionais:
         df_real = df_real[df_real['regional'].isin(regionais)]
         df_metas = df_metas[df_metas['regional'].isin(regionais)]
@@ -88,7 +87,6 @@ def adesao(request):
     media_produtividade = df_group['produtividade'].mean() if not df_group.empty else 0
     df_group['alerta_produtividade'] = df_group['produtividade'] < media_produtividade
 
-    # FILTROS DINÂMICOS
     df_filtros_real = get_df_real()
     df_filtros_meta = get_df_meta()
 
@@ -116,9 +114,9 @@ def adesao(request):
         'total_meta': int(df_group['meta'].sum()),
         'total_realizado': int(df_group['volume'].sum()),
         'total_proj': int(df_group['projecao'].sum()),
-        'total_proj_percent': f\"{(df_group['projecao'].sum() / df_group['meta'].sum()) * 100:.2f}%\" if df_group['meta'].sum() > 0 else \"0.00%\",
-        'total_ticket': f\"{(df_group['receita'].sum() / df_group['volume'].sum()):.2f}\" if df_group['volume'].sum() > 0 else \"0.00\",
-        'total_produtividade': f\"{(df_group['volume'].sum() / df_group['vendedores'].sum()):.2f}\" if df_group['vendedores'].sum() > 0 else \"0.00\",
+        'total_proj_percent': f"{(df_group['projecao'].sum() / df_group['meta'].sum()) * 100:.2f}%" if df_group['meta'].sum() > 0 else "0.00%",
+        'total_ticket': f"{(df_group['receita'].sum() / df_group['volume'].sum()):.2f}" if df_group['volume'].sum() > 0 else "0.00",
+        'total_produtividade': f"{(df_group['volume'].sum() / df_group['vendedores'].sum()):.2f}" if df_group['vendedores'].sum() > 0 else "0.00",
         'data_inicio': data_inicio.strftime('%Y-%m-%d'),
         'data_fim': data_fim.strftime('%Y-%m-%d'),
         'regionais': filtros.get('regional', []),
@@ -130,6 +128,7 @@ def adesao(request):
     }
 
     return render(request, 'adesao/index.html', context)
+
 
 @lru_cache()
 def get_df_real_vendedor():
