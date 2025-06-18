@@ -30,6 +30,12 @@ def dashboard_diaadia(request):
         if col in df_real.columns:
             df_real[col] = df_real[col].astype(str).str.strip().str.lower().str.replace('\xa0', ' ')
 
+    # filtros completos antes do filtro por data
+    df_filtros = df_real.copy()
+    regionais = sorted(df_filtros['regional'].dropna().unique())
+    coordenadores = sorted(df_filtros['coordenador'].dropna().unique())
+    canais_disponiveis = sorted(df_filtros['canal'].dropna().unique())
+
     if data_inicio:
         data_inicio = pd.to_datetime(data_inicio)
         data_fim = pd.to_datetime(data_fim) if data_fim else (data_inicio + pd.DateOffset(months=1)).replace(day=24)
@@ -67,10 +73,6 @@ def dashboard_diaadia(request):
 
     if df_tabela.shape[1] > 0:
         df_tabela.loc['Total Realizado'] = df_tabela.sum(axis=0)
-
-    regionais = sorted(df_real['regional'].dropna().unique())
-    coordenadores = sorted(df_real['coordenador'].dropna().unique())
-    canais_disponiveis = sorted(df_real['canal'].dropna().unique())
 
     context = {
         'tabela': df_tabela.reset_index().rename(columns={'index': 'canal'}).to_dict(orient='records'),
