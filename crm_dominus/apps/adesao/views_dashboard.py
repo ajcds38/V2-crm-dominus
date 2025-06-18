@@ -3,6 +3,7 @@ from django.shortcuts import render
 import pandas as pd
 import os
 from datetime import datetime, timedelta
+from django.conf import settings
 from diasuteis.models import DiasUteis
 
 @login_required(login_url='/')
@@ -13,7 +14,7 @@ def dashboard_diaadia(request):
     coordenador = request.GET.get('coordenador', '').strip().lower()
     canais = [c.strip().lower() for c in request.GET.getlist('canais')]
 
-    base_path = r'D:\CRM_Dominus_Entrega\crm_dominus\apps\dados'
+    base_path = os.path.join(settings.BASE_DIR, 'crm_dominus', 'apps', 'dados')
     realizado_path = os.path.join(base_path, 'adesao_realizado.xlsx')
     meta_path = os.path.join(base_path, 'metas_adesao.xlsx')
 
