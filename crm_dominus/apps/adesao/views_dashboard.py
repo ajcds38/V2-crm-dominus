@@ -30,7 +30,6 @@ def dashboard_diaadia(request):
 
     df_real.columns = df_real.columns.str.strip().str.lower()
     df_meta.columns = df_meta.columns.str.strip().str.lower()
-    df_real = df_real.loc[:, ~df_real.columns.str.contains('^unnamed')]
     df_real['data'] = pd.to_datetime(df_real['data'], dayfirst=True, errors='coerce')
     df_real = df_real[df_real['data'].notna()]
     df_real['volume'] = pd.to_numeric(df_real['volume'], errors='coerce').fillna(0)
