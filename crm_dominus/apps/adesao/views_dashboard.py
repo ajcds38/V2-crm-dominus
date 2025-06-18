@@ -12,11 +12,6 @@ def get_df_real():
     caminho = os.path.join(settings.BASE_DIR, 'crm_dominus', 'apps', 'dados', 'adesao_realizado.xlsx')
     return pd.read_excel(caminho)
 
-@lru_cache()
-def get_df_meta():
-    caminho = os.path.join(settings.BASE_DIR, 'crm_dominus', 'apps', 'dados', 'metas_adesao.xlsx')
-    return pd.read_excel(caminho)
-
 @login_required(login_url='/')
 def dashboard_diaadia(request):
     data_inicio = request.GET.get('data_inicio')
@@ -26,10 +21,7 @@ def dashboard_diaadia(request):
     canais = [c.strip().lower() for c in request.GET.getlist('canais')]
 
     df_real = get_df_real()
-    df_meta = get_df_meta()
-
     df_real.columns = df_real.columns.str.strip().str.lower()
-    df_meta.columns = df_meta.columns.str.strip().str.lower()
     df_real['data'] = pd.to_datetime(df_real['data'], dayfirst=True, errors='coerce')
     df_real = df_real[df_real['data'].notna()]
     df_real['volume'] = pd.to_numeric(df_real['volume'], errors='coerce').fillna(0)
@@ -37,8 +29,6 @@ def dashboard_diaadia(request):
     for col in ['cidade', 'regional', 'coordenador', 'canal']:
         if col in df_real.columns:
             df_real[col] = df_real[col].astype(str).str.strip().str.lower().str.replace('\xa0', ' ')
-        if col in df_meta.columns:
-            df_meta[col] = df_meta[col].astype(str).str.strip().str.lower().str.replace('\xa0', ' ')
 
     if data_inicio:
         data_inicio = pd.to_datetime(data_inicio)
@@ -60,26 +50,10 @@ def dashboard_diaadia(request):
 
     if regional:
         df_real = df_real[df_real['regional'] == regional]
-        df_meta = df_meta[df_meta['regional'] == regional]
     if coordenador:
         df_real = df_real[df_real['coordenador'] == coordenador]
-        df_meta = df_meta[df_meta['coordenador'] == coordenador]
     if canais:
         df_real = df_real[df_real['canal'].isin(canais)]
-        df_meta = df_meta[df_meta['canal'].isin(canais)]
-
-    dias_row = DiasUteis.objects.filter(data_inicio=data_inicio, data_fim=data_fim).first()
-    feriados = dias_row.feriados.split(',') if dias_row and dias_row.feriados else []
-    incluir_feriados = dias_row.incluir_feriados if dias_row else False
-    ignorar_domingos = dias_row.ignorar_domingos if dias_row else True
-
-    total_dias = (data_fim - data_inicio).days + 1
-    dias_uteis_lista = [
-        (data_inicio + timedelta(days=i)).strftime('%d/%m')
-        for i in range(total_dias)
-        if (not ignorar_domingos or (data_inicio + timedelta(days=i)).weekday() != 6)
-        and (incluir_feriados or (data_inicio + timedelta(days=i)).strftime('%d/%m/%Y') not in feriados)
-    ]
 
     todas_datas = pd.date_range(start=data_inicio, end=data_fim).date
     colunas_dias = [data.strftime('%d/%m') for data in todas_datas]
@@ -91,27 +65,8 @@ def dashboard_diaadia(request):
         df_tabela = df_temp.sort_index()
         df_tabela.index = df_tabela.index.str.title()
 
-    meta_total = df_meta['meta'].sum()
-
-    diaria_necessaria_por_dia = {
-        dia: round(meta_total / len(dias_uteis_lista), 2) if dia in dias_uteis_lista else 0
-        for dia in colunas_dias
-    }
-
-    diaria_entregue_por_dia = {
-        dia: (df_tabela[dia].sum() / diaria_necessaria_por_dia[dia]) * 100 if diaria_necessaria_por_dia[dia] > 0 else 0
-        for dia in colunas_dias
-    }
-
     if df_tabela.shape[1] > 0:
         df_tabela.loc['Total Realizado'] = df_tabela.sum(axis=0)
-
-    alerta_por_data = {
-        dia: (
-            'vermelho' if diaria_entregue_por_dia.get(dia, 0) < 80 else
-            'amarelo' if diaria_entregue_por_dia.get(dia, 0) < 100 else ''
-        ) for dia in colunas_dias
-    }
 
     regionais = sorted(df_real['regional'].dropna().unique())
     coordenadores = sorted(df_real['coordenador'].dropna().unique())
@@ -128,7 +83,6 @@ def dashboard_diaadia(request):
         'regionais_selecionadas': [regional] if regional else [],
         'coordenadores': coordenadores,
         'coordenadores_selecionadas': [coordenador] if coordenador else [],
-        'alerta_por_data': alerta_por_data,
     }
 
     return render(request, 'dashboard/diaadia.html', context)
