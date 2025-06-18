@@ -3,12 +3,13 @@ from django.contrib.auth.decorators import login_required
 from datetime import datetime, timedelta
 import pandas as pd
 import os
+from django.conf import settings
 from diasuteis.models import DiasUteis
 from functools import lru_cache
 
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-CAMINHO_REALIZADO = os.path.join(BASE_DIR, '..', 'apps', 'dados', 'adesao_realizado.xlsx')
-CAMINHO_METAS_CIDADE = os.path.join(BASE_DIR, '..', 'apps', 'dados', 'metas_adesao.xlsx')
+# CAMINHOS ABSOLUTOS CORRETOS PARA PRODUÇÃO (Render)
+CAMINHO_REALIZADO = os.path.join(settings.BASE_DIR, 'crm_dominus', 'apps', 'dados', 'adesao_realizado.xlsx')
+CAMINHO_METAS_CIDADE = os.path.join(settings.BASE_DIR, 'crm_dominus', 'apps', 'dados', 'metas_adesao.xlsx')
 
 @lru_cache()
 def get_df_real():
@@ -56,15 +57,10 @@ def adesao(request):
 
     if regionais:
         df_real = df_real[df_real['regional'].isin(regionais)]
-        df_metas = df_metas[df_metas['regional'].isin(regionais)]
-
     if coordenadores:
         df_real = df_real[df_real['coordenador'].isin(coordenadores)]
-        df_metas = df_metas[df_metas['coordenador'].isin(coordenadores)]
-
     if canais:
         df_real = df_real[df_real['canal'].isin(canais)]
-        df_metas = df_metas[df_metas['canal'].isin(canais)]
 
     colunas_chave = ['cidade', 'canal', 'regional', 'coordenador']
     df_agg = df_real.groupby(colunas_chave).agg({
@@ -132,12 +128,10 @@ def adesao(request):
 
     return render(request, 'adesao/index.html', context)
 
-
-from functools import lru_cache
-
 @lru_cache()
 def get_df_real_vendedor():
-    return pd.read_excel(CAMINHO_REALIZADO, engine="openpyxl")
+    caminho = os.path.join(settings.BASE_DIR, 'crm_dominus', 'apps', 'dados', 'adesao_realizado.xlsx')
+    return pd.read_excel(caminho, engine="openpyxl")
 
 @login_required(login_url='/')
 def adesao_vendedor(request):
