@@ -57,10 +57,13 @@ def adesao(request):
 
     if regionais:
         df_real = df_real[df_real['regional'].isin(regionais)]
+
     if coordenadores:
         df_real = df_real[df_real['coordenador'].isin(coordenadores)]
+
     if canais:
         df_real = df_real[df_real['canal'].isin(canais)]
+        df_metas = df_metas[df_metas['canal'].isin(canais)]
 
     colunas_chave = ['cidade', 'canal', 'regional', 'coordenador']
     df_agg = df_real.groupby(colunas_chave).agg({
