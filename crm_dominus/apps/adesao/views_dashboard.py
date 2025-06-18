@@ -100,8 +100,10 @@ def dashboard_diaadia(request):
         for dia in colunas_dias
     }
 
-    if df_tabela.shape[1] > 0:
-        df_tabela.loc['Total Realizado'] = df_tabela.sum(axis=0)
+    if not df_tabela.empty:
+        total_realizado = df_tabela.sum(axis=0)
+        total_realizado.name = 'Total Realizado'
+        df_tabela = pd.concat([df_tabela, total_realizado.to_frame().T])
 
     alerta_por_data = {
         dia: (
