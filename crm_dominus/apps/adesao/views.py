@@ -45,8 +45,8 @@ def adesao(request):
         if col in df_metas.columns:
             df_metas[col] = df_metas[col].astype(str).str.strip().str.upper()
 
-    df_real['canal'] = df_real['canal'].replace({'EXTERNO': 'PAP', 'PAP': 'PAP'})
-    df_metas['canal'] = df_metas['canal'].replace({'EXTERNO': 'PAP', 'PAP': 'PAP'})
+    df_real['canal'] = df_real['canal'].replace({'EXTERNO': 'PAP'})
+    df_metas['canal'] = df_metas['canal'].replace({'EXTERNO': 'PAP'})
 
     df_real['data'] = pd.to_datetime(df_real['data'], dayfirst=True, errors='coerce')
     df_real = df_real[(df_real['data'] >= data_inicio) & (df_real['data'] <= data_fim)]
@@ -87,27 +87,11 @@ def adesao(request):
     media_produtividade = df_group['produtividade'].mean() if not df_group.empty else 0
     df_group['alerta_produtividade'] = df_group['produtividade'] < media_produtividade
 
-    df_filtros_real = get_df_real()
-    df_filtros_meta = get_df_meta()
-
-    df_filtros_real.columns = df_filtros_real.columns.str.strip().str.lower()
-    df_filtros_meta.columns = df_filtros_meta.columns.str.strip().str.lower()
-
-    for col in ['regional', 'coordenador', 'canal']:
-        if col in df_filtros_real.columns:
-            df_filtros_real[col] = df_filtros_real[col].astype(str).str.strip().str.upper()
-        if col in df_filtros_meta.columns:
-            df_filtros_meta[col] = df_filtros_meta[col].astype(str).str.strip().str.upper()
-
-    df_filtros_real['canal'] = df_filtros_real['canal'].replace({'EXTERNO': 'PAP', 'PAP': 'PAP'})
-    df_filtros_meta['canal'] = df_filtros_meta['canal'].replace({'EXTERNO': 'PAP', 'PAP': 'PAP'})
-
-    df_filtros = pd.concat([df_filtros_real, df_filtros_meta], ignore_index=True)
-
-    filtros = {}
-    for col in ['regional', 'coordenador', 'canal']:
-        if col in df_filtros.columns:
-            filtros[col] = sorted(df_filtros[col].dropna().unique())
+    filtros = {
+        'regional': sorted(df_real['regional'].dropna().unique()),
+        'coordenador': sorted(df_real['coordenador'].dropna().unique()),
+        'canal': sorted(df_real['canal'].dropna().unique()),
+    }
 
     context = {
         'cidades': df_group.to_dict(orient='records'),
@@ -128,7 +112,6 @@ def adesao(request):
     }
 
     return render(request, 'adesao/index.html', context)
-
 
 @lru_cache()
 def get_df_real_vendedor():
