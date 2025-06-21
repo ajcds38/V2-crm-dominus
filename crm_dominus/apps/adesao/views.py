@@ -60,15 +60,16 @@ def adesao(request):
 
     df_real = df_real[(df_real['data'] >= data_inicio) & (df_real['data'] <= data_fim)]
 
-    if regionais:
+    # Ajuste aqui: só filtra se não for "tudo"
+    if regionais and set(regionais) != set(todas_regionais):
         df_real = df_real[df_real['regional'].isin(regionais)]
         df_metas = df_metas[df_metas['regional'].isin(regionais)]
 
-    if coordenadores:
+    if coordenadores and set(coordenadores) != set(todos_coordenadores):
         df_real = df_real[df_real['coordenador'].isin(coordenadores)]
         df_metas = df_metas[df_metas['coordenador'].isin(coordenadores)]
 
-    if canais:
+    if canais and set(canais) != set(todos_canais):
         df_real = df_real[df_real['canal'].isin(canais)]
         df_metas = df_metas[df_metas['canal'].isin(canais)]
 
@@ -115,6 +116,7 @@ def adesao(request):
     }
 
     return render(request, 'adesao/index.html', context)
+
 
 @lru_cache()
 def get_df_real_vendedor():
