@@ -7,22 +7,27 @@ from .forms import DiasUteisForm
 
 @login_required
 def configurar_dias_uteis(request):
-    dias_uteis = DiasUteis.objects.last()
-    form = DiasUteisForm(request.POST or None, instance=dias_uteis)
+    if request.method == 'POST':
+        dias_uteis = DiasUteis.objects.last()
+        form = DiasUteisForm(request.POST, instance=dias_uteis)
+        if form.is_valid():
+            form.save()
+            return redirect('dias_uteis_configurar')
+    else:
+        dias_uteis = DiasUteis.objects.last()
+        form = DiasUteisForm(instance=dias_uteis)
 
-    if request.method == 'POST' and form.is_valid():
-        form.save()  # O cálculo é feito automaticamente no modelo
-        return redirect('dias_uteis_configurar')
+    # Recarrega o objeto atualizado após salvar
+    dias_uteis_atualizado = DiasUteis.objects.last()
 
     context = {
         'form': form,
-        'total_dias': dias_uteis.total_dias_uteis if dias_uteis else None,
-        'dias_passados': dias_uteis.dias_uteis_passados if dias_uteis else None,
-        'dias_restantes': dias_uteis.dias_uteis_restantes if dias_uteis else None,
+        'total_dias': dias_uteis_atualizado.total_dias_uteis if dias_uteis_atualizado else None,
+        'dias_passados': dias_uteis_atualizado.dias_uteis_passados if dias_uteis_atualizado else None,
+        'dias_restantes': dias_uteis_atualizado.dias_uteis_restantes if dias_uteis_atualizado else None,
     }
 
     return render(request, 'diasuteis/configurar.html', context)
-
 
 def calcular_dias_uteis_ajax(request):
     data_inicio = request.GET.get('data_inicio')
