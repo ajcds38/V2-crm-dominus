@@ -29,7 +29,7 @@ def adesao(request):
     data_inicio = pd.to_datetime(request.GET.get('inicio', data_inicio_padrao.strftime('%Y-%m-%d')))
     data_fim = pd.to_datetime(request.GET.get('fim', data_fim_padrao.strftime('%Y-%m-%d')))
 
-    regionais = [r.strip().upper() for r in request.GET.getlist('regional') if r.strip()]
+    regionais = [r.strip().upper() for r in request.GET.getlist('regional') if r.strip()] or ['ALISSON']
     coordenadores = [c.strip().upper() for c in request.GET.getlist('coordenador') if c.strip()]
     canais = [c.strip().upper() for c in request.GET.getlist('canal') if c.strip()]
 
@@ -87,11 +87,10 @@ def adesao(request):
     media_produtividade = df_group['produtividade'].mean() if not df_group.empty else 0
     df_group['alerta_produtividade'] = df_group['produtividade'] < media_produtividade
 
-    filtros = {
-        'regional': sorted(df_real['regional'].dropna().unique()),
-        'coordenador': sorted(df_real['coordenador'].dropna().unique()),
-        'canal': sorted(df_real['canal'].dropna().unique()),
-    }
+    # Mantém todos os valores possíveis nos filtros, mesmo com filtros aplicados
+    todas_regionais = sorted(set(df_real['regional'].dropna().unique()) | set(df_metas['regional'].dropna().unique()))
+    todos_coordenadores = sorted(set(df_real['coordenador'].dropna().unique()) | set(df_metas['coordenador'].dropna().unique()))
+    todos_canais = sorted(set(df_real['canal'].dropna().unique()) | set(df_metas['canal'].dropna().unique()))
 
     context = {
         'cidades': df_group.to_dict(orient='records'),
@@ -103,12 +102,12 @@ def adesao(request):
         'total_produtividade': f"{(df_group['volume'].sum() / df_group['vendedores'].sum()):.2f}" if df_group['vendedores'].sum() > 0 else "0.00",
         'data_inicio': data_inicio.strftime('%Y-%m-%d'),
         'data_fim': data_fim.strftime('%Y-%m-%d'),
-        'regionais': filtros.get('regional', []),
-        'coordenadores': filtros.get('coordenador', []),
-        'canais': filtros.get('canal', []),
-        'regionais_selecionadas': request.GET.getlist('regional'),
-        'coordenadores_selecionadas': request.GET.getlist('coordenador'),
-        'canais_selecionadas': request.GET.getlist('canal'),
+        'regionais': todas_regionais,
+        'coordenadores': todos_coordenadores,
+        'canais': todos_canais,
+        'regionais_selecionadas': regionais,
+        'coordenadores_selecionadas': coordenadores,
+        'canais_selecionadas': canais,
     }
 
     return render(request, 'adesao/index.html', context)
