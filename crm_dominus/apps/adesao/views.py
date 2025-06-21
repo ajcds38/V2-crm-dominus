@@ -30,9 +30,6 @@ def adesao(request):
     data_fim = pd.to_datetime(request.GET.get('fim', data_fim_padrao.strftime('%Y-%m-%d')))
 
     regionais = [r.strip().upper() for r in request.GET.getlist('regional') if r.strip()]
-    if not request.GET.get('regional') and not regionais:
-        regionais = ['ALISSON']
-
     coordenadores = [c.strip().upper() for c in request.GET.getlist('coordenador') if c.strip()]
     canais = [c.strip().upper() for c in request.GET.getlist('canal') if c.strip()]
 
@@ -53,14 +50,12 @@ def adesao(request):
 
     df_real['data'] = pd.to_datetime(df_real['data'], dayfirst=True, errors='coerce')
 
-    # Filtros antes de aplicar para manter todas as opções nos dropdowns
     todas_regionais = sorted(set(df_real['regional'].dropna().unique()) | set(df_metas['regional'].dropna().unique()))
     todos_coordenadores = sorted(set(df_real['coordenador'].dropna().unique()) | set(df_metas['coordenador'].dropna().unique()))
     todos_canais = sorted(set(df_real['canal'].dropna().unique()) | set(df_metas['canal'].dropna().unique()))
 
     df_real = df_real[(df_real['data'] >= data_inicio) & (df_real['data'] <= data_fim)]
 
-    # Ajuste aqui: só filtra se não for "tudo"
     if regionais and set(regionais) != set(todas_regionais):
         df_real = df_real[df_real['regional'].isin(regionais)]
         df_metas = df_metas[df_metas['regional'].isin(regionais)]
