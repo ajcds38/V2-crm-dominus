@@ -29,7 +29,10 @@ def adesao(request):
     data_inicio = pd.to_datetime(request.GET.get('inicio', data_inicio_padrao.strftime('%Y-%m-%d')))
     data_fim = pd.to_datetime(request.GET.get('fim', data_fim_padrao.strftime('%Y-%m-%d')))
 
-    regionais = [r.strip().upper() for r in request.GET.getlist('regional') if r.strip()] or ['ALISSON']
+    regionais = [r.strip().upper() for r in request.GET.getlist('regional') if r.strip()]
+    if not request.GET.get('regional') and not regionais:
+        regionais = ['ALISSON']
+
     coordenadores = [c.strip().upper() for c in request.GET.getlist('coordenador') if c.strip()]
     canais = [c.strip().upper() for c in request.GET.getlist('canal') if c.strip()]
 
@@ -50,7 +53,7 @@ def adesao(request):
 
     df_real['data'] = pd.to_datetime(df_real['data'], dayfirst=True, errors='coerce')
 
-    # Filtros antes da aplicação dos filtros (mantém opções completas nos dropdowns)
+    # Filtros antes de aplicar para manter todas as opções nos dropdowns
     todas_regionais = sorted(set(df_real['regional'].dropna().unique()) | set(df_metas['regional'].dropna().unique()))
     todos_coordenadores = sorted(set(df_real['coordenador'].dropna().unique()) | set(df_metas['coordenador'].dropna().unique()))
     todos_canais = sorted(set(df_real['canal'].dropna().unique()) | set(df_metas['canal'].dropna().unique()))
@@ -112,7 +115,6 @@ def adesao(request):
     }
 
     return render(request, 'adesao/index.html', context)
-
 
 @lru_cache()
 def get_df_real_vendedor():
