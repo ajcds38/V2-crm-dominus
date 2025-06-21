@@ -49,6 +49,12 @@ def adesao(request):
     df_metas['canal'] = df_metas['canal'].replace({'EXTERNO': 'PAP'})
 
     df_real['data'] = pd.to_datetime(df_real['data'], dayfirst=True, errors='coerce')
+
+    # Filtros antes da aplicação dos filtros (mantém opções completas nos dropdowns)
+    todas_regionais = sorted(set(df_real['regional'].dropna().unique()) | set(df_metas['regional'].dropna().unique()))
+    todos_coordenadores = sorted(set(df_real['coordenador'].dropna().unique()) | set(df_metas['coordenador'].dropna().unique()))
+    todos_canais = sorted(set(df_real['canal'].dropna().unique()) | set(df_metas['canal'].dropna().unique()))
+
     df_real = df_real[(df_real['data'] >= data_inicio) & (df_real['data'] <= data_fim)]
 
     if regionais:
@@ -87,11 +93,6 @@ def adesao(request):
     media_produtividade = df_group['produtividade'].mean() if not df_group.empty else 0
     df_group['alerta_produtividade'] = df_group['produtividade'] < media_produtividade
 
-    # Mantém todos os valores possíveis nos filtros, mesmo com filtros aplicados
-    todas_regionais = sorted(set(df_real['regional'].dropna().unique()) | set(df_metas['regional'].dropna().unique()))
-    todos_coordenadores = sorted(set(df_real['coordenador'].dropna().unique()) | set(df_metas['coordenador'].dropna().unique()))
-    todos_canais = sorted(set(df_real['canal'].dropna().unique()) | set(df_metas['canal'].dropna().unique()))
-
     context = {
         'cidades': df_group.to_dict(orient='records'),
         'total_meta': int(df_group['meta'].sum()),
@@ -111,6 +112,7 @@ def adesao(request):
     }
 
     return render(request, 'adesao/index.html', context)
+
 
 @lru_cache()
 def get_df_real_vendedor():
