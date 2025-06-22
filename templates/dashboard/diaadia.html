@@ -86,14 +86,14 @@
         <tr style="background-color: #b8923a; color: black; font-weight: bold;">
             <td style="color: black;"><strong>{{ linha.canal }}</strong></td>
             {% for dia in colunas_dias %}
-                <td style="color: black;"><strong>{{ linha|get:dia|floatformat:0 }}</strong></td>
+                <td style="color: black;"><strong>{{ linha|get:dia|default:0|floatformat:0 }}</strong></td>
             {% endfor %}
         </tr>
         {% elif linha.canal != 'Diária Necessária' and linha.canal != 'Diária Entregue' %}
         <tr>
             <td><strong>{{ linha.canal|title }}</strong></td>
             {% for dia in colunas_dias %}
-                <td>{{ linha|get:dia|floatformat:0 }}</td>
+                <td>{{ linha|get:dia|default:0|floatformat:0 }}</td>
             {% endfor %}
         </tr>
         {% endif %}
@@ -123,19 +123,19 @@
                 {% for linha in tabela_canal %}
                 <tr>
                     <td><strong>{{ linha.canal|title }}</strong></td>
-                    <td>{{ linha.meta|floatformat:0 }}</td>
-                    <td>{{ linha.realizado|floatformat:0 }}</td>
-                    <td>{{ linha.projecao|floatformat:0 }}</td>
+                    <td>{{ linha.meta|default:0|floatformat:0 }}</td>
+                    <td>{{ linha.realizado|default:0|floatformat:0 }}</td>
+                    <td>{{ linha.projecao|default:0|floatformat:0 }}</td>
                     <td>
-                        {% if linha.projecao_percentual > 100 %}
-                            <span style="color: green;">🟢 {{ linha.projecao_percentual|floatformat:1 }}%</span>
-                        {% elif linha.projecao_percentual > 79.99 %}
-                            <span style="color: orange;">🟠 {{ linha.projecao_percentual|floatformat:1 }}%</span>
+                        {% if linha.projecao_percentual|default:0 > 100 %}
+                            <span style="color: green;">🟢 {{ linha.projecao_percentual|default:0|floatformat:1 }}%</span>
+                        {% elif linha.projecao_percentual|default:0 > 79.99 %}
+                            <span style="color: orange;">🟠 {{ linha.projecao_percentual|default:0|floatformat:1 }}%</span>
                         {% else %}
-                            <span style="color: red;">🔴 {{ linha.projecao_percentual|floatformat:1 }}%</span>
+                            <span style="color: red;">🔴 {{ linha.projecao_percentual|default:0|floatformat:1 }}%</span>
                         {% endif %}
                     </td>
-                    <td>{{ linha.ticket_medio|floatformat:2 }}</td>
+                    <td>{{ linha.ticket_medio|default:0|floatformat:2 }}</td>
                 </tr>
                 {% endfor %}
             </tbody>
@@ -159,19 +159,19 @@
                 {% for linha in tabela_canal_ativacao %}
                 <tr>
                     <td><strong>{{ linha.canal|title }}</strong></td>
-                    <td>{{ linha.meta|floatformat:0 }}</td>
-                    <td>{{ linha.realizado|floatformat:0 }}</td>
-                    <td>{{ linha.projecao|floatformat:0 }}</td>
+                    <td>{{ linha.meta|default:0|floatformat:0 }}</td>
+                    <td>{{ linha.realizado|default:0|floatformat:0 }}</td>
+                    <td>{{ linha.projecao|default:0|floatformat:0 }}</td>
                     <td>
-                        {% if linha.projecao_percentual > 100 %}
-                            <span style="color: green;">🟢 {{ linha.projecao_percentual|floatformat:1 }}%</span>
-                        {% elif linha.projecao_percentual > 79.99 %}
-                            <span style="color: orange;">🟠 {{ linha.projecao_percentual|floatformat:1 }}%</span>
+                        {% if linha.projecao_percentual|default:0 > 100 %}
+                            <span style="color: green;">🟢 {{ linha.projecao_percentual|default:0|floatformat:1 }}%</span>
+                        {% elif linha.projecao_percentual|default:0 > 79.99 %}
+                            <span style="color: orange;">🟠 {{ linha.projecao_percentual|default:0|floatformat:1 }}%</span>
                         {% else %}
-                            <span style="color: red;">🔴 {{ linha.projecao_percentual|floatformat:1 }}%</span>
+                            <span style="color: red;">🔴 {{ linha.projecao_percentual|default:0|floatformat:1 }}%</span>
                         {% endif %}
                     </td>
-                    <td>{{ linha.ticket_medio|floatformat:2 }}</td>
+                    <td>{{ linha.ticket_medio|default:0|floatformat:2 }}</td>
                 </tr>
                 {% endfor %}
             </tbody>
@@ -194,15 +194,15 @@
         {% for linha in painel_risco %}
         <tr>
             <td><strong>{{ linha.cidade|title }}</strong></td>
-            <td>{{ linha.limite_cancelamento|floatformat:0 }}</td>
-            <td>{{ linha.cancelamento_proj|floatformat:0 }}</td>
+            <td>{{ linha.limite_cancelamento|default:0|floatformat:0 }}</td>
+            <td>{{ linha.cancelamento_proj|default:0|floatformat:0 }}</td>
             <td>
-                {% if linha.projecao_percentual > 120 %}
-                    <span style="color: red; font-weight: bold;">🔴 {{ linha.projecao_percentual|floatformat:1 }}%</span>
-                {% elif linha.projecao_percentual > 100 %}
-                    <span style="color: orange; font-weight: bold;">🔘 {{ linha.projecao_percentual|floatformat:1 }}%</span>
+                {% if linha.projecao_percentual|default:0 > 120 %}
+                    <span style="color: red; font-weight: bold;">🔴 {{ linha.projecao_percentual|default:0|floatformat:1 }}%</span>
+                {% elif linha.projecao_percentual|default:0 > 100 %}
+                    <span style="color: orange; font-weight: bold;">🔘 {{ linha.projecao_percentual|default:0|floatformat:1 }}%</span>
                 {% else %}
-                    <span style="color: green;">🟢 {{ linha.projecao_percentual|floatformat:1 }}%</span>
+                    <span style="color: green;">🟢 {{ linha.projecao_percentual|default:0|floatformat:1 }}%</span>
                 {% endif %}
             </td>
         </tr>
