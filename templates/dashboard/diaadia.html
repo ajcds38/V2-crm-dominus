@@ -3,7 +3,7 @@
 {% load static %}
 {% load dict_extras %}
 
-<h2 class="titulo-pagina">Dashboard - Visão Dia a Dia</h2>
+<h2 class="titulo-pagina">Dashboard dos Resultados</h2>
 
 <form method="get" class="form-filtro">
     <div class="filtros-bloco">
@@ -38,12 +38,23 @@
                 </select>
             </div>
 
-            <div class="form-campo dropdown-canal">
+            <div class="form-campo dropdown-canal" style="position: relative;">
                 <label for="canal">Canal:</label>
                 <button type="button" class="filtro-visual canal-toggle" onclick="toggleDropdown()">Selecionar canais</button>
-                <div id="canalDropdown" class="canal-dropdown">
+                <div id="canalDropdown" class="canal-dropdown" style="
+                    display: none;
+                    position: absolute;
+                    background-color: #111;
+                    color: white;
+                    padding: 10px;
+                    border: 1px solid #b8923a;
+                    grid-template-columns: repeat(2, 1fr);
+                    gap: 5px;
+                    z-index: 1000;
+                    box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+                ">
                     {% for c in canais_disponiveis %}
-                        <label><input type="checkbox" name="canais" value="{{ c }}" {% if c in canais_selecionados %}checked{% endif %}> {{ c|title }}</label>
+                        <label style="color: white;"><input type="checkbox" name="canais" value="{{ c }}" {% if c in canais_selecionados %}checked{% endif %}> {{ c|title }}</label>
                     {% endfor %}
                 </div>
             </div>
@@ -57,11 +68,12 @@
 </form>
 
 <br>
+<h3 class="titulo-pagina" style="color: #b8923a;">📌 Adesão Dia a Dia</h3>
 
 {% if tabela %}
 <table>
     <thead>
-        <tr style="background-color: #d4af37; color: black;">
+        <tr style="background-color: #b8923a; color: black;">
             <th>Canal</th>
             {% for dia in colunas_dias %}
                 <th>{{ dia }}</th>
@@ -71,10 +83,10 @@
     <tbody>
         {% for linha in tabela %}
         {% if linha.canal == 'Total Realizado' %}
-        <tr style="background-color: #d4af37; color: black; font-weight: bold;">
-            <td>{{ linha.canal }}</td>
+        <tr style="background-color: #b8923a; color: black; font-weight: bold;">
+            <td style="color: black;"><strong>{{ linha.canal }}</strong></td>
             {% for dia in colunas_dias %}
-                <td>{{ linha|get:dia|floatformat:0 }}</td>
+                <td style="color: black;"><strong>{{ linha|get:dia|floatformat:0 }}</strong></td>
             {% endfor %}
         </tr>
         {% elif linha.canal != 'Diária Necessária' and linha.canal != 'Diária Entregue' %}
@@ -89,95 +101,114 @@
     </tbody>
 </table>
 {% else %}
-<p style="text-align:center; color: #f0c75e; font-weight: bold;">Nenhum dado encontrado para o período selecionado.</p>
+<p style="text-align:center; color: #b8923a; font-weight: bold;">Nenhum dado encontrado para o período selecionado.</p>
 {% endif %}
 
-<style>
-.filtros-bloco {
-    border: 1px solid #d4af37;
-    border-radius: 10px;
-    padding: 10px;
-    margin-bottom: 15px;
-}
-.filtros-linha {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 16px;
-    align-items: flex-end;
-    justify-content: center;
-}
-.form-campo {
-    display: flex;
-    flex-direction: column;
-    min-width: 160px;
-    font-weight: bold;
-    color: #f0c75e;
-}
-.filtro-visual {
-    background-color: #0c0f18;
-    color: #f0c75e;
-    border: 1px solid #f0c75e;
-    border-radius: 6px;
-    padding: 6px 12px;
-    font-weight: bold;
-    width: 160px;
-    margin-top: 4px;
-    transition: 0.3s;
-}
-.filtro-visual:focus {
-    outline: none;
-    box-shadow: 0 0 6px #f0c75e;
-}
-.dropdown-canal {
-    position: relative;
-}
-.canal-toggle {
-    width: 160px;
-}
-.canal-dropdown {
-    display: none;
-    position: absolute;
-    top: 100%;
-    left: 0;
-    background-color: #111;
-    border: 1px solid #d4af37;
-    border-radius: 6px;
-    padding: 10px;
-    z-index: 100;
-    display: grid;
-    grid-template-columns: repeat(2, minmax(120px, 1fr));
-    gap: 8px 20px;
-    max-height: 200px;
-    overflow-y: auto;
-    width: max-content;
-}
-.canal-dropdown label {
-    color: #eee;
-    font-size: 14px;
-}
-.canal-dropdown input[type="checkbox"] {
-    margin-right: 6px;
-    accent-color: #d4af37;
-}
-.btn-filtrar {
-    background-color: #d4af37;
-    color: #000;
-    font-weight: bold;
-    padding: 8px 16px;
-    border: none;
-    border-radius: 6px;
-    transition: 0.3s;
-}
-.btn-filtrar:hover {
-    background-color: #c29c30;
-    box-shadow: 0 0 6px #d4af37;
-}
-    tr:last-child td {
-    background-color: #c59e33 !important;
-    color: #000 !important;
-    font-weight: bold;
-}
-</style>
+<br>
+<div style="display: flex; gap: 20px; align-items: flex-start; flex-wrap: wrap;">
+    <div style="flex: 1; min-width: 480px;">
+        <h2 class="titulo-pagina">📊 Visão por Canal - Adesão</h2>
+        <table>
+            <thead>
+                <tr style="background-color: #b8923a; color: black;">
+                    <th>Canal</th>
+                    <th>Meta</th>
+                    <th>Realizado</th>
+                    <th>Projeção</th>
+                    <th>Projeção %</th>
+                    <th>Ticket Médio</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for linha in tabela_canal %}
+                <tr>
+                    <td><strong>{{ linha.canal|title }}</strong></td>
+                    <td>{{ linha.meta|floatformat:0 }}</td>
+                    <td>{{ linha.realizado|floatformat:0 }}</td>
+                    <td>{{ linha.projecao|floatformat:0 }}</td>
+                    <td>
+                        {% if linha.projecao_percentual > 100 %}
+                            <span style="color: green;">🟢 {{ linha.projecao_percentual|floatformat:1 }}%</span>
+                        {% elif linha.projecao_percentual > 79.99 %}
+                            <span style="color: orange;">🟠 {{ linha.projecao_percentual|floatformat:1 }}%</span>
+                        {% else %}
+                            <span style="color: red;">🔴 {{ linha.projecao_percentual|floatformat:1 }}%</span>
+                        {% endif %}
+                    </td>
+                    <td>{{ linha.ticket_medio|floatformat:2 }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <div style="flex: 1; min-width: 480px;">
+        <h2 class="titulo-pagina">📊 Visão por Canal - Ativação</h2>
+        <table>
+            <thead>
+                <tr style="background-color: #b8923a; color: black;">
+                    <th>Canal</th>
+                    <th>Meta</th>
+                    <th>Realizado</th>
+                    <th>Projeção</th>
+                    <th>Projeção %</th>
+                    <th>Ticket Médio</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for linha in tabela_canal_ativacao %}
+                <tr>
+                    <td><strong>{{ linha.canal|title }}</strong></td>
+                    <td>{{ linha.meta|floatformat:0 }}</td>
+                    <td>{{ linha.realizado|floatformat:0 }}</td>
+                    <td>{{ linha.projecao|floatformat:0 }}</td>
+                    <td>
+                        {% if linha.projecao_percentual > 100 %}
+                            <span style="color: green;">🟢 {{ linha.projecao_percentual|floatformat:1 }}%</span>
+                        {% elif linha.projecao_percentual > 79.99 %}
+                            <span style="color: orange;">🟠 {{ linha.projecao_percentual|floatformat:1 }}%</span>
+                        {% else %}
+                            <span style="color: red;">🔴 {{ linha.projecao_percentual|floatformat:1 }}%</span>
+                        {% endif %}
+                    </td>
+                    <td>{{ linha.ticket_medio|floatformat:2 }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<br>
+<h2 class="titulo-pagina">🚨 Painel de Risco - Cancelamento - As 10 cidades ofensoras </h2>
+<table>
+    <thead>
+        <tr style="background-color: #b8923a; color: black;">
+            <th>Cidade</th>
+            <th>Limite</th>
+            <th>Projeção Cancelamento</th>
+            <th>Projeção %</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for linha in painel_risco %}
+        <tr>
+            <td><strong>{{ linha.cidade|title }}</strong></td>
+            <td>{{ linha.limite_cancelamento|floatformat:0 }}</td>
+            <td>{{ linha.cancelamento_proj|floatformat:0 }}</td>
+            <td>
+                {% if linha.projecao_percentual > 120 %}
+                    <span style="color: red; font-weight: bold;">🔴 {{ linha.projecao_percentual|floatformat:1 }}%</span>
+                {% elif linha.projecao_percentual > 100 %}
+                    <span style="color: orange; font-weight: bold;">🔘 {{ linha.projecao_percentual|floatformat:1 }}%</span>
+                {% else %}
+                    <span style="color: green;">🟢 {{ linha.projecao_percentual|floatformat:1 }}%</span>
+                {% endif %}
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
 
 <script>
 function toggleDropdown() {
