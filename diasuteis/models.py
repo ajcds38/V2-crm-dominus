@@ -33,7 +33,7 @@ class DiasUteis(models.Model):
             if self.ignorar_domingos and data.weekday() == 6:
                 data += timedelta(days=1)
                 continue
-            if self.incluir_feriados and data in feriados:  # 👈 Aqui está o ajuste
+            if not self.incluir_feriados and data in feriados:  # ✅ Correção aplicada aqui
                 data += timedelta(days=1)
                 continue
             dias_uteis.append(data.strftime('%Y-%m-%d'))
