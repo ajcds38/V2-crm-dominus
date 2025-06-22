@@ -59,7 +59,7 @@ def calcular_dias_uteis_ajax(request):
         if ignorar_domingos and dia_atual.weekday() == 6:
             dia_atual += timedelta(days=1)
             continue
-        if not incluir_feriados and dia_atual in feriados:
+        if incluir_feriados is False and dia_atual in feriados:
             dia_atual += timedelta(days=1)
             continue
         total += 1
