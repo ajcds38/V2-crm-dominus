@@ -60,8 +60,15 @@ table th {
     font-weight: bold;
 }
 
-table td {
+table tbody td {
     color: #ddd;
+}
+
+/* Linha de total no rodapé da tabela */
+table tfoot tr.linha-total td {
+    background-color: #d4af37 !important;
+    color: #000 !important;
+    font-weight: bold !important;
 }
 
 /* Bloco dos filtros */
@@ -207,13 +214,11 @@ input[type="date"]:focus {
     align-items: center;
 }
 
-/* Vermelho - projeção < 80% */
 .alerta-vermelho {
     background-color: #ff2c2c;
     color: white;
 }
 
-/* Amarelo - projeção entre 80% e 99.99% */
 .alerta-amarelo {
     background-color: #f7c325;
     color: #000;
