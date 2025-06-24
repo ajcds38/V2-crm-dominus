@@ -28,7 +28,8 @@ def backlog_instalacoes(request):
     df_ativacao['tipo'] = 'ativacao'
 
     # Junta as duas bases
-    df = pd.concat([df_adesao, df_ativacao], ignore_index=True)
+    df_completo = pd.concat([df_adesao, df_ativacao], ignore_index=True)
+    df = df_completo.copy()
 
     # Filtros
     data_inicio = request.GET.get('data_inicio')
@@ -71,12 +72,12 @@ def backlog_instalacoes(request):
             'ativacao': '✅' if tem_ativacao else '<span style="color: white; background-color: red; padding: 2px 6px; border-radius: 4px;">❌</span>',
         })
 
-    # Listas únicas para filtros
-    lista_regionais = sorted(df['regional'].dropna().unique())
-    lista_coordenadores = sorted(df['coordenador'].dropna().unique())
-    lista_canais = sorted(df['canal'].dropna().unique())
-    lista_cidades = sorted(df['município/uf'].dropna().unique())
-    lista_vendedores = sorted(df['consultor venda'].dropna().unique())
+    # Listas únicas SEM filtro para manter todas as opções no formulário
+    lista_regionais = sorted(df_completo['regional'].dropna().unique())
+    lista_coordenadores = sorted(df_completo['coordenador'].dropna().unique())
+    lista_canais = sorted(df_completo['canal'].dropna().unique())
+    lista_cidades = sorted(df_completo['município/uf'].dropna().unique())
+    lista_vendedores = sorted(df_completo['consultor venda'].dropna().unique())
 
     context = {
         'clientes': resultado,
