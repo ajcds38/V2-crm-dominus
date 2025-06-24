@@ -26,11 +26,11 @@ def backlog_instalacoes(request):
     # Filtros da URL
     data_inicio = request.GET.get('data_inicio')
     data_fim = request.GET.get('data_fim')
-    regionais = request.GET.getlist('regional')
-    coordenadores = request.GET.getlist('coordenador')
-    canais = request.GET.getlist('canal')
-    cidades = request.GET.getlist('cidade')
-    vendedores = request.GET.getlist('vendedor')
+    regional = request.GET.getlist('regional')
+    coordenador = request.GET.getlist('coordenador')
+    canal = request.GET.getlist('canal')
+    cidade = request.GET.getlist('cidade')
+    vendedor = request.GET.getlist('vendedor')
 
     # Aplicar filtros de data
     if data_inicio and data_fim:
@@ -46,18 +46,18 @@ def backlog_instalacoes(request):
         return df
 
     # Filtra adesão
-    df_adesao_filtrado = aplicar_filtro(df_adesao, 'regional', regionais)
-    df_adesao_filtrado = aplicar_filtro(df_adesao_filtrado, 'coordenador', coordenadores)
-    df_adesao_filtrado = aplicar_filtro(df_adesao_filtrado, 'canal', canais)
-    df_adesao_filtrado = aplicar_filtro(df_adesao_filtrado, 'município/uf', cidades)
-    df_adesao_filtrado = aplicar_filtro(df_adesao_filtrado, 'consultor venda', vendedores)
+    df_adesao_filtrado = aplicar_filtro(df_adesao, 'regional', regional)
+    df_adesao_filtrado = aplicar_filtro(df_adesao_filtrado, 'coordenador', coordenador)
+    df_adesao_filtrado = aplicar_filtro(df_adesao_filtrado, 'canal', canal)
+    df_adesao_filtrado = aplicar_filtro(df_adesao_filtrado, 'município/uf', cidade)
+    df_adesao_filtrado = aplicar_filtro(df_adesao_filtrado, 'consultor venda', vendedor)
 
     # Filtra ativação
-    df_ativacao_filtrado = aplicar_filtro(df_ativacao, 'regional', regionais)
-    df_ativacao_filtrado = aplicar_filtro(df_ativacao_filtrado, 'coordenador', coordenadores)
-    df_ativacao_filtrado = aplicar_filtro(df_ativacao_filtrado, 'canal', canais)
-    df_ativacao_filtrado = aplicar_filtro(df_ativacao_filtrado, 'município/uf', cidades)
-    df_ativacao_filtrado = aplicar_filtro(df_ativacao_filtrado, 'consultor venda', vendedores)
+    df_ativacao_filtrado = aplicar_filtro(df_ativacao, 'regional', regional)
+    df_ativacao_filtrado = aplicar_filtro(df_ativacao_filtrado, 'coordenador', coordenador)
+    df_ativacao_filtrado = aplicar_filtro(df_ativacao_filtrado, 'canal', canal)
+    df_ativacao_filtrado = aplicar_filtro(df_ativacao_filtrado, 'município/uf', cidade)
+    df_ativacao_filtrado = aplicar_filtro(df_ativacao_filtrado, 'consultor venda', vendedor)
 
     # Coleta nomes únicos de ambas as bases
     nomes_adesao = set(df_adesao_filtrado['cliente'].dropna().unique())
@@ -69,8 +69,8 @@ def backlog_instalacoes(request):
     for nome in todos_nomes:
         resultado.append({
             'nome': nome.title(),
-            'adesao': '✅' if nome in nomes_adesao else '❌',
-            'ativacao': '✅' if nome in nomes_ativacao else '❌',
+            'adesao': '✅' if nome in nomes_adesao else '<span style="color: white; background-color: red; padding: 2px 6px; border-radius: 4px;">❌</span>',
+            'ativacao': '✅' if nome in nomes_ativacao else '<span style="color: white; background-color: red; padding: 2px 6px; border-radius: 4px;">❌</span>',
         })
 
     # Listas únicas para filtros
@@ -85,11 +85,11 @@ def backlog_instalacoes(request):
         'filtros': {
             'data_inicio': request.GET.get('data_inicio', ''),
             'data_fim': request.GET.get('data_fim', ''),
-            'regionais': regionais,
-            'coordenadores': coordenadores,
-            'canais': canais,
-            'cidades': cidades,
-            'vendedores': vendedores,
+            'regional': regional,
+            'coordenador': coordenador,
+            'canal': canal,
+            'cidade': cidade,
+            'vendedor': vendedor,
             'lista_regionais': lista_regionais,
             'lista_coordenadores': lista_coordenadores,
             'lista_canais': lista_canais,
