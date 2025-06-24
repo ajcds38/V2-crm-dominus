@@ -1,0 +1,64 @@
+{% extends 'base.html' %}
+{% block content %}
+
+<h2 class="titulo-pagina">Backlog de Instalações</h2>
+
+<form method="get" class="form-filtro">
+    <div class="filtros-bloco">
+        <div class="filtros-linha">
+            <div class="form-campo">
+                <label for="data_inicio">Data Início:</label>
+                <input type="date" id="data_inicio" name="data_inicio" value="{{ filtros.data_inicio }}" class="filtro-visual">
+            </div>
+            <div class="form-campo">
+                <label for="data_fim">Data Fim:</label>
+                <input type="date" id="data_fim" name="data_fim" value="{{ filtros.data_fim }}" class="filtro-visual">
+            </div>
+            <div class="form-campo">
+                <label for="regional">Regional:</label>
+                <input type="text" id="regional" name="regional" value="{{ filtros.regional }}" class="filtro-visual">
+            </div>
+            <div class="form-campo">
+                <label for="coordenador">Coordenador:</label>
+                <input type="text" id="coordenador" name="coordenador" value="{{ filtros.coordenador }}" class="filtro-visual">
+            </div>
+            <div class="form-campo">
+                <label for="canal">Canal:</label>
+                <input type="text" id="canal" name="canal" value="{{ filtros.canal }}" class="filtro-visual">
+            </div>
+            <div class="form-campo">
+                <label for="cidade">Cidade:</label>
+                <input type="text" id="cidade" name="cidade" value="{{ filtros.cidade }}" class="filtro-visual">
+            </div>
+            <div class="form-campo">
+                <label for="vendedor">Vendedor:</label>
+                <input type="text" id="vendedor" name="vendedor" value="{{ filtros.vendedor }}" class="filtro-visual">
+            </div>
+            <div class="form-campo">
+                <label style="visibility: hidden;">Filtrar</label>
+                <button type="submit" class="btn-filtrar">Filtrar</button>
+            </div>
+        </div>
+    </div>
+</form>
+
+<table>
+    <thead>
+        <tr>
+            <th>Nome do Cliente</th>
+            <th>Adesão</th>
+            <th>Ativação</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for cliente in clientes %}
+        <tr>
+            <td>{{ cliente.nome }}</td>
+            <td style="text-align: center;">{{ cliente.adesao }}</td>
+            <td style="text-align: center;">{{ cliente.ativacao }}</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+{% endblock %}

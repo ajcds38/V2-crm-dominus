@@ -3,7 +3,8 @@ from django.contrib import admin
 from django.urls import path, include
 from django.contrib.auth import views as auth_views
 from crm_dominus.apps.adesao.views_dashboard import dashboard_diaadia
-from crm_dominus.apps.saldocidades.views import saldo_cidades  # ✅ Importa a nova view
+from crm_dominus.apps.saldocidades.views import saldo_cidades
+from backlog.views import backlog_instalacoes  # ✅ Nova importação
 
 urlpatterns = [
     path('', lambda request: redirect('login/')),
@@ -16,7 +17,8 @@ urlpatterns = [
     path('metas/', include('crm_dominus.apps.metas.urls')),
     path('diasuteis/', include('diasuteis.urls')),
     path('dashboard/diaadia/', dashboard_diaadia, name='dashboard_diaadia'),
-    
-    # ✅ Nova rota para Saldo de Cidades
     path('saldo/', saldo_cidades, name='saldo_cidades'),
+    
+    # ✅ Nova rota para Backlog de Instalações
+    path('backlog/', backlog_instalacoes, name='backlog_instalacoes'),
 ]

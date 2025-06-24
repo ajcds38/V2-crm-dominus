@@ -13,6 +13,7 @@ INSTALLED_APPS = [
     'crm_dominus.apps.cancelamento',
     'crm_dominus.apps.metas',
     'diasuteis',
+    'backlog',  # 👈 NOVO APP REGISTRADO AQUI
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
