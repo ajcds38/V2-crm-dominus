@@ -1,5 +1,6 @@
 {% extends 'base.html' %}
 {% block content %}
+{% load static %}
 
 <h2 class="titulo-pagina">Backlog de Instalações</h2>
 
@@ -14,26 +15,57 @@
                 <label for="data_fim">Data Fim:</label>
                 <input type="date" id="data_fim" name="data_fim" value="{{ filtros.data_fim }}" class="filtro-visual">
             </div>
+
             <div class="form-campo">
                 <label for="regional">Regional:</label>
-                <input type="text" id="regional" name="regional" value="{{ filtros.regional }}" class="filtro-visual">
+                <select name="regional" id="regional" class="filtro-select">
+                    <option value="">Todas</option>
+                    {% for r in filtros.lista_regionais %}
+                        <option value="{{ r }}" {% if r in filtros.regionais %}selected{% endif %}>{{ r }}</option>
+                    {% endfor %}
+                </select>
             </div>
+
             <div class="form-campo">
                 <label for="coordenador">Coordenador:</label>
-                <input type="text" id="coordenador" name="coordenador" value="{{ filtros.coordenador }}" class="filtro-visual">
+                <select name="coordenador" id="coordenador" class="filtro-select">
+                    <option value="">Todos</option>
+                    {% for c in filtros.lista_coordenadores %}
+                        <option value="{{ c }}" {% if c in filtros.coordenadores %}selected{% endif %}>{{ c }}</option>
+                    {% endfor %}
+                </select>
             </div>
+
             <div class="form-campo">
                 <label for="canal">Canal:</label>
-                <input type="text" id="canal" name="canal" value="{{ filtros.canal }}" class="filtro-visual">
+                <select name="canal" id="canal" class="filtro-select">
+                    <option value="">Todos</option>
+                    {% for canal in filtros.lista_canais %}
+                        <option value="{{ canal }}" {% if canal in filtros.canais %}selected{% endif %}>{{ canal }}</option>
+                    {% endfor %}
+                </select>
             </div>
+
             <div class="form-campo">
                 <label for="cidade">Cidade:</label>
-                <input type="text" id="cidade" name="cidade" value="{{ filtros.cidade }}" class="filtro-visual">
+                <select name="cidade" id="cidade" class="filtro-select">
+                    <option value="">Todas</option>
+                    {% for cidade in filtros.lista_cidades %}
+                        <option value="{{ cidade }}" {% if cidade in filtros.cidades %}selected{% endif %}>{{ cidade }}</option>
+                    {% endfor %}
+                </select>
             </div>
+
             <div class="form-campo">
                 <label for="vendedor">Vendedor:</label>
-                <input type="text" id="vendedor" name="vendedor" value="{{ filtros.vendedor }}" class="filtro-visual">
+                <select name="vendedor" id="vendedor" class="filtro-select">
+                    <option value="">Todos</option>
+                    {% for v in filtros.lista_vendedores %}
+                        <option value="{{ v }}" {% if v in filtros.vendedores %}selected{% endif %}>{{ v }}</option>
+                    {% endfor %}
+                </select>
             </div>
+
             <div class="form-campo">
                 <label style="visibility: hidden;">Filtrar</label>
                 <button type="submit" class="btn-filtrar">Filtrar</button>
@@ -54,8 +86,20 @@
         {% for cliente in clientes %}
         <tr>
             <td>{{ cliente.nome }}</td>
-            <td style="text-align: center;">{{ cliente.adesao }}</td>
-            <td style="text-align: center;">{{ cliente.ativacao }}</td>
+            <td style="text-align: center;">
+                {% if cliente.adesao == '✅' %}
+                    ✅
+                {% else %}
+                    <span style="color: white; background-color: red; padding: 2px 6px; border-radius: 4px;">❌</span>
+                {% endif %}
+            </td>
+            <td style="text-align: center;">
+                {% if cliente.ativacao == '✅' %}
+                    ✅
+                {% else %}
+                    <span style="color: white; background-color: red; padding: 2px 6px; border-radius: 4px;">❌</span>
+                {% endif %}
+            </td>
         </tr>
         {% endfor %}
     </tbody>
