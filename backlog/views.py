@@ -69,8 +69,8 @@ def backlog_instalacoes(request):
     for nome in todos_nomes:
         resultado.append({
             'nome': nome.title(),
-            'adesao': '✅' if nome in nomes_adesao else '<span style="color: white; background-color: red; padding: 2px 6px; border-radius: 4px;">❌</span>',
-            'ativacao': '✅' if nome in nomes_ativacao else '<span style="color: white; background-color: red; padding: 2px 6px; border-radius: 4px;">❌</span>',
+            'adesao': '✅' if nome in nomes_adesao else '❌',
+            'ativacao': '✅' if nome in nomes_ativacao else '❌',
         })
 
     # Listas únicas para filtros
@@ -85,16 +85,16 @@ def backlog_instalacoes(request):
         'filtros': {
             'data_inicio': request.GET.get('data_inicio', ''),
             'data_fim': request.GET.get('data_fim', ''),
-            'regional': regionais,
-            'coordenador': coordenadores,
-            'canal': canais,
-            'cidade': cidades,
-            'vendedor': vendedores,
-            'regionais': lista_regionais,
-            'coordenadores': lista_coordenadores,
-            'canais': lista_canais,
-            'cidades': lista_cidades,
-            'vendedores': lista_vendedores,
+            'regionais': regionais,
+            'coordenadores': coordenadores,
+            'canais': canais,
+            'cidades': cidades,
+            'vendedores': vendedores,
+            'lista_regionais': lista_regionais,
+            'lista_coordenadores': lista_coordenadores,
+            'lista_canais': lista_canais,
+            'lista_cidades': lista_cidades,
+            'lista_vendedores': lista_vendedores,
         }
     }
 
