@@ -20,7 +20,7 @@
                 <select name="regional" id="regional" class="filtro-visual">
                     <option value="">Todas</option>
                     {% for r in regionais %}
-                        <option value="{{ r }}" {% if r in regionais_selecionadas %}selected{% endif %}>{{ r.title }}</option>
+                        <option value="{{ r }}" {% if r in regionais_selecionadas %}selected{% endif %}>{{ r|title }}</option>
                     {% endfor %}
                 </select>
             </div>
@@ -30,7 +30,7 @@
                 <select name="coordenador" id="coordenador" class="filtro-visual">
                     <option value="">Todos</option>
                     {% for c in coordenadores %}
-                        <option value="{{ c }}" {% if c in coordenadores_selecionadas %}selected{% endif %}>{{ c.title }}</option>
+                        <option value="{{ c }}" {% if c in coordenadores_selecionadas %}selected{% endif %}>{{ c|title }}</option>
                     {% endfor %}
                 </select>
             </div>
@@ -40,7 +40,7 @@
                 <button type="button" class="filtro-visual canal-toggle" onclick="toggleDropdown()">Selecionar canais</button>
                 <div id="canalDropdown" class="canal-dropdown">
                     {% for c in canais %}
-                        <label><input type="checkbox" name="canal" value="{{ c }}" {% if c in canais_selecionadas %}checked{% endif %}> {{ c.title }}</label>
+                        <label><input type="checkbox" name="canal" value="{{ c }}" {% if c in canais_selecionadas %}checked{% endif %}> {{ c|title }}</label>
                     {% endfor %}
                 </div>
             </div>
