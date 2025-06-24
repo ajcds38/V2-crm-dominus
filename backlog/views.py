@@ -45,8 +45,9 @@ def backlog_instalacoes(request):
         df = df[(df['data'] >= data_inicio) & (df['data'] <= data_fim)]
 
     def aplicar_filtro(df, coluna, valores):
-        if valores:
-            return df[df[coluna].isin([v.upper() for v in valores])]
+        valores_filtrados = [v.upper() for v in valores if v.strip().upper() not in ['', 'TODOS', 'TODAS']]
+        if valores_filtrados:
+            return df[df[coluna].isin(valores_filtrados)]
         return df
 
     df = aplicar_filtro(df, 'regional', regionais)
