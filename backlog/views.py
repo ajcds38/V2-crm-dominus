@@ -25,7 +25,7 @@ def backlog_instalacoes(request):
 
     for df in [df_adesao, df_ativacao]:
         df.columns = df.columns.str.strip().str.lower()
-        for col in ['regional', 'coordenador', 'canal', 'cidade', 'vendedor', 'nome']:
+        for col in ['regional', 'coordenador', 'canal', 'cidade', 'vendedor', 'cliente']:
             if col in df.columns:
                 df[col] = df[col].astype(str).str.strip().str.upper()
         if 'data' in df.columns:
@@ -42,16 +42,16 @@ def backlog_instalacoes(request):
             df_adesao = df_adesao[df_adesao[col] == filtro]
             df_ativacao = df_ativacao[df_ativacao[col] == filtro]
 
-    nomes_adesao = set(df_adesao['nome'].unique())
-    nomes_ativacao = set(df_ativacao['nome'].unique())
+    nomes_adesao = set(df_adesao['cliente'].unique())
+    nomes_ativacao = set(df_ativacao['cliente'].unique())
     todos_nomes = sorted(nomes_adesao.union(nomes_ativacao))
 
     resultado = []
-    for nome in todos_nomes:
+    for cliente in todos_nomes:
         resultado.append({
-            'nome': nome.title(),
-            'adesao': '✅' if nome in nomes_adesao else '❌',
-            'ativacao': '✅' if nome in nomes_ativacao else '❌',
+            'nome': cliente.title(),
+            'adesao': '✅' if cliente in nomes_adesao else '❌',
+            'ativacao': '✅' if cliente in nomes_ativacao else '❌',
         })
 
     context = {
