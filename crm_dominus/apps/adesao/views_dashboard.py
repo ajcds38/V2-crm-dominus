@@ -23,6 +23,25 @@ def dashboard_diaadia(request):
     coordenador = request.GET.get('coordenador', '')
     canais = request.GET.getlist('canais')
 
+    hoje = datetime.today()
+
+    if data_inicio:
+        data_inicio = pd.to_datetime(data_inicio)
+        data_fim = pd.to_datetime(data_fim) if data_fim else (data_inicio + pd.DateOffset(months=1)).replace(day=24)
+    else:
+        if hoje.day < 25:
+            data_inicio = (hoje.replace(day=1) - timedelta(days=1)).replace(day=25)
+            data_fim = hoje.replace(day=24)
+        else:
+            data_inicio = hoje.replace(day=25)
+            proximo_mes = (hoje.replace(day=28) + timedelta(days=4)).replace(day=1)
+            data_fim = proximo_mes.replace(day=24)
+
+    if data_fim < data_inicio:
+        data_inicio = data_fim - pd.DateOffset(months=1)
+
+    intervalo_passado = data_fim.date() < hoje.date()
+
     def preparar_df(path, colunas_padrao, data_col='data'):
         df = pd.read_excel(path)
         df.columns = df.columns.str.strip().str.lower()
@@ -35,53 +54,41 @@ def dashboard_diaadia(request):
         return df
 
     df_real = preparar_df(adesao_path, ['cidade', 'regional', 'coordenador', 'canal'])
+    df_ativacao = preparar_df(ativacao_path, ['cidade', 'regional', 'coordenador', 'canal'])
+    df_cancelamento = preparar_df(cancelamento_path, ['cidade', 'regional', 'coordenador', 'canal'])
+
     df_real['canal'] = df_real['canal'].replace('externo', 'pap')
     df_real['volume'] = pd.to_numeric(df_real['volume'], errors='coerce').fillna(0)
     df_real['receita'] = pd.to_numeric(df_real['receita'], errors='coerce').fillna(0) if 'receita' in df_real.columns else 0
 
-    df_ativacao = preparar_df(ativacao_path, ['cidade', 'regional', 'coordenador', 'canal'])
     df_ativacao['canal'] = df_ativacao['canal'].replace('externo', 'pap')
     df_ativacao['volume'] = pd.to_numeric(df_ativacao['volume'], errors='coerce').fillna(0)
 
-    df_metas = preparar_df(metas_adesao_path, ['cidade', 'canal', 'regional', 'coordenador'])
-    df_metas['meta'] = pd.to_numeric(df_metas['meta'], errors='coerce').fillna(0)
-    df_metas['canal'] = df_metas['canal'].replace('externo', 'pap')
-
-    df_metas_ativacao = preparar_df(metas_ativacao_path, ['cidade', 'canal', 'regional', 'coordenador'])
-    df_metas_ativacao['meta'] = pd.to_numeric(df_metas_ativacao['meta'], errors='coerce').fillna(0)
-    df_metas_ativacao['canal'] = df_metas_ativacao['canal'].replace('externo', 'pap')
-
-    df_cancelamento = preparar_df(cancelamento_path, ['cidade', 'regional', 'coordenador', 'canal'])
     df_cancelamento['volume'] = pd.to_numeric(df_cancelamento['volume'], errors='coerce').fillna(0)
     df_cancelamento['canal'] = 'interno'
 
-    df_limite = preparar_df(limite_path, ['cidade', 'regional', 'coordenador'])
-    df_limite['meta'] = pd.to_numeric(df_limite['meta'], errors='coerce').fillna(0)
+    data_meta_ref = data_inicio.replace(day=25)
 
-    # Salva as opções completas antes dos filtros
-    regionais_disponiveis = sorted(df_real['regional'].dropna().str.title().unique())
-    coordenadores_disponiveis = sorted(df_real['coordenador'].dropna().str.title().unique())
-    canais_disponiveis = sorted(df_real['canal'].dropna().str.title().unique())
+    def preparar_meta(path, padroes, nome_coluna='meta'):
+        df = pd.read_excel(path)
+        df.columns = df.columns.str.strip().str.lower()
+        df['data_meta'] = pd.to_datetime(df.get('data_meta'), dayfirst=True, errors='coerce')
+        df = df[df['data_meta'] == data_meta_ref] if 'data_meta' in df.columns else df.iloc[0:0]
+        if df.empty:
+            df = pd.DataFrame(columns=padroes + [nome_coluna])
+        for col in padroes:
+            if col in df.columns:
+                df[col] = df[col].astype(str).str.strip().str.lower()
+        df[nome_coluna] = pd.to_numeric(df.get(nome_coluna), errors='coerce').fillna(0)
+        return df
 
-    if data_inicio:
-        data_inicio = pd.to_datetime(data_inicio)
-        data_fim = pd.to_datetime(data_fim) if data_fim else (data_inicio + pd.DateOffset(months=1)).replace(day=24)
-    else:
-        hoje = datetime.today()
-        if hoje.day < 25:
-            data_inicio = (hoje.replace(day=1) - timedelta(days=1)).replace(day=25)
-            data_fim = hoje.replace(day=24)
-        else:
-            data_inicio = hoje.replace(day=25)
-            proximo_mes = (hoje.replace(day=28) + timedelta(days=4)).replace(day=1)
-            data_fim = proximo_mes.replace(day=24)
+    df_metas = preparar_meta(metas_adesao_path, ['cidade', 'canal', 'regional', 'coordenador'])
+    df_metas['canal'] = df_metas['canal'].replace('externo', 'pap')
 
-    if data_fim < data_inicio:
-        data_inicio = data_fim - pd.DateOffset(months=1)
+    df_metas_ativacao = preparar_meta(metas_ativacao_path, ['cidade', 'canal', 'regional', 'coordenador'])
+    df_metas_ativacao['canal'] = df_metas_ativacao['canal'].replace('externo', 'pap')
 
-    df_real = df_real[(df_real['data'] >= data_inicio) & (df_real['data'] <= data_fim)]
-    df_cancelamento = df_cancelamento[(df_cancelamento['data'] >= data_inicio) & (df_cancelamento['data'] <= data_fim)]
-    df_ativacao = df_ativacao[(df_ativacao['data'] >= data_inicio) & (df_ativacao['data'] <= data_fim)]
+    df_limite = preparar_meta(limite_path, ['cidade', 'regional', 'coordenador'])
 
     def aplicar_filtros(df, filtros):
         for col, valor in filtros.items():
@@ -117,7 +124,12 @@ def dashboard_diaadia(request):
         df_canais = pd.DataFrame({'canal': sorted(set(df_base['canal']) | set(df_meta['canal']))})
         canal_agrupado = df_canais.merge(canal_agrupado, on='canal', how='left').merge(metas_agrupadas, on='canal', how='left')
         canal_agrupado = canal_agrupado.fillna(0)
-        canal_agrupado['projecao'] = (canal_agrupado['realizado'] / dias_uteis_passados) * (dias_uteis_passados + dias_uteis_restantes)
+
+        if intervalo_passado:
+            canal_agrupado['projecao'] = canal_agrupado['realizado']
+        else:
+            canal_agrupado['projecao'] = (canal_agrupado['realizado'] / dias_uteis_passados) * (dias_uteis_passados + dias_uteis_restantes)
+
         canal_agrupado['projecao_percentual'] = (canal_agrupado['projecao'] / canal_agrupado['meta'].replace(0, 1)) * 100
         canal_agrupado['ticket_medio'] = canal_agrupado.apply(
             lambda row: row['receita'] / row['realizado'] if row['realizado'] > 0 else 0,
@@ -146,6 +158,7 @@ def dashboard_diaadia(request):
     tabela_canal_adesao = gerar_tabela_canal(df_real, df_metas)
     tabela_canal_ativacao = gerar_tabela_canal(df_ativacao, df_metas_ativacao)
 
+    # Cancelamento (sem alteração na lógica de projeção)
     cancelamento_agrupado = df_cancelamento.groupby('cidade', as_index=False).agg(cancelamento_proj=('volume', 'sum'))
     cancelamento_agrupado['cidade'] = cancelamento_agrupado['cidade'].str.strip().str.lower()
     df_limite['cidade'] = df_limite['cidade'].str.strip().str.lower()
@@ -174,11 +187,11 @@ def dashboard_diaadia(request):
         'colunas_dias': colunas_dias,
         'data_inicio': data_inicio.strftime('%Y-%m-%d'),
         'data_fim': data_fim.strftime('%Y-%m-%d'),
-        'canais_disponiveis': canais_disponiveis,
+        'canais_disponiveis': sorted(df_real['canal'].dropna().str.title().unique()),
         'canais_selecionados': canais,
-        'regionais': regionais_disponiveis,
+        'regionais': sorted(df_real['regional'].dropna().str.title().unique()),
         'regionais_selecionadas': [regional] if regional else [],
-        'coordenadores': coordenadores_disponiveis,
+        'coordenadores': sorted(df_real['coordenador'].dropna().str.title().unique()),
         'coordenadores_selecionadas': [coordenador] if coordenador else [],
         'tabela_canal': tabela_canal_adesao,
         'tabela_canal_ativacao': tabela_canal_ativacao,

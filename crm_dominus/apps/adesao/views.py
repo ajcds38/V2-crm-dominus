@@ -28,6 +28,7 @@ def adesao(request):
 
     data_inicio = pd.to_datetime(request.GET.get('inicio', data_inicio_padrao.strftime('%Y-%m-%d')))
     data_fim = pd.to_datetime(request.GET.get('fim', data_fim_padrao.strftime('%Y-%m-%d')))
+    data_meta_referencia = data_inicio.replace(day=25)
 
     regionais = [r.strip().upper() for r in request.GET.getlist('regional') if r.strip()]
     coordenadores = [c.strip().upper() for c in request.GET.getlist('coordenador') if c.strip()]
@@ -49,6 +50,11 @@ def adesao(request):
     df_metas['canal'] = df_metas['canal'].replace({'EXTERNO': 'PAP'})
 
     df_real['data'] = pd.to_datetime(df_real['data'], dayfirst=True, errors='coerce')
+    df_metas['data_meta'] = pd.to_datetime(df_metas.get('data_meta'), dayfirst=True, errors='coerce')
+
+    df_metas = df_metas[df_metas['data_meta'] == data_meta_referencia]
+    if df_metas.empty:
+        df_metas = pd.DataFrame(columns=['cidade', 'canal', 'regional', 'coordenador', 'meta'])
 
     todas_regionais = sorted(set(df_real['regional'].dropna().unique()) | set(df_metas['regional'].dropna().unique()))
     todos_coordenadores = sorted(set(df_real['coordenador'].dropna().unique()) | set(df_metas['coordenador'].dropna().unique()))
@@ -85,7 +91,12 @@ def adesao(request):
     dias_restantes = dias_uteis.dias_uteis_restantes if dias_uteis else 1
     total_dias_uteis = dias_passados + dias_restantes
 
-    df_group['projecao'] = (df_group['volume'] / dias_passados) * total_dias_uteis
+    # ✅ REGRA: Se o período analisado estiver no passado, a projeção será igual ao realizado
+    if data_fim < hoje:
+        df_group['projecao'] = df_group['volume']
+    else:
+        df_group['projecao'] = (df_group['volume'] / dias_passados) * total_dias_uteis
+
     df_group['proj_percentual'] = (df_group['projecao'] / df_group['meta'].replace({0: 1})) * 100
     df_group['ticket_medio'] = df_group['receita'] / df_group['volume'].replace({0: 1})
     df_group['produtividade'] = df_group['volume'] / df_group['vendedores'].replace({0: 1})
@@ -111,7 +122,6 @@ def adesao(request):
     }
 
     return render(request, 'adesao/index.html', context)
-
 
 @lru_cache()
 def get_df_real_vendedor():
@@ -160,7 +170,6 @@ def adesao_vendedor(request):
         'regional': 'first',
         'coordenador': 'first'
     }).reset_index()
-
     df_agg['volume'] = df.groupby(colunas_chave).size().values
     df_agg['meta'] = 25
 
@@ -169,7 +178,12 @@ def adesao_vendedor(request):
     dias_restantes = dias_uteis.dias_uteis_restantes if dias_uteis else 1
     total_dias_uteis = dias_passados + dias_restantes
 
-    df_agg['projecao'] = (df_agg['volume'] / dias_passados) * total_dias_uteis
+    # ✅ Regra: se o período estiver no passado, projeção = volume
+    if data_fim < hoje:
+        df_agg['projecao'] = df_agg['volume']
+    else:
+        df_agg['projecao'] = (df_agg['volume'] / dias_passados) * total_dias_uteis
+
     df_agg['proj_percentual'] = (df_agg['projecao'] / df_agg['meta'].replace({0: 1})) * 100
     df_agg['ticket_medio'] = df_agg['receita'] / df_agg['volume'].replace({0: 1})
     df_agg['produtividade'] = df_agg['volume']

@@ -19,6 +19,11 @@ def ativacao(request):
     data_inicio = pd.to_datetime(request.GET.get('inicio', data_inicio_padrao.strftime('%Y-%m-%d')))
     data_fim = pd.to_datetime(request.GET.get('fim', data_fim_padrao.strftime('%Y-%m-%d')))
 
+    intervalo_passado = data_fim.date() < hoje.date()
+
+    # Define a data_meta de referência
+    data_meta_referencia = data_inicio.replace(day=25)
+
     regionais = [r.strip().upper() for r in request.GET.getlist('regional') if r.strip()]
     coordenadores = [c.strip().upper() for c in request.GET.getlist('coordenador') if c.strip()]
     canais = [c.strip().upper() for c in request.GET.getlist('canal') if c.strip()]
@@ -35,15 +40,19 @@ def ativacao(request):
         if col in df_metas.columns:
             df_metas[col] = df_metas[col].astype(str).str.strip().str.upper()
 
-    canal_padrao = {
-        'EXTERNO': 'PAP',
-        'PAP': 'PAP'
-    }
+    canal_padrao = {'EXTERNO': 'PAP', 'PAP': 'PAP'}
     df_real['canal'] = df_real['canal'].map(canal_padrao).fillna(df_real['canal'])
     df_metas['canal'] = df_metas['canal'].map(canal_padrao).fillna(df_metas['canal'])
 
     df_real['data'] = pd.to_datetime(df_real['data'], dayfirst=True, errors='coerce')
     df_real = df_real[(df_real['data'] >= data_inicio) & (df_real['data'] <= data_fim)]
+
+    if 'data_meta' in df_metas.columns:
+        df_metas['data_meta'] = pd.to_datetime(df_metas['data_meta'], dayfirst=True, errors='coerce')
+        df_metas = df_metas[df_metas['data_meta'] == data_meta_referencia]
+
+    if df_metas.empty:
+        df_metas = pd.DataFrame(columns=['cidade', 'canal', 'regional', 'coordenador', 'meta'])
 
     if regionais:
         df_real = df_real[df_real['regional'].isin(regionais)]
@@ -74,22 +83,23 @@ def ativacao(request):
     dias_restantes = dias_uteis.dias_uteis_restantes if dias_uteis else 1
     total_dias_uteis = dias_passados + dias_restantes
 
-    df_group['projecao'] = (df_group['volume'] / dias_passados) * total_dias_uteis
+    if intervalo_passado:
+        df_group['projecao'] = df_group['volume']
+    else:
+        df_group['projecao'] = (df_group['volume'] / dias_passados) * total_dias_uteis
+
     df_group['proj_percentual'] = (df_group['projecao'] / df_group['meta'].replace({0: 1})) * 100
     df_group['ticket_medio'] = df_group['receita'] / df_group['volume'].replace({0: 1})
     df_group['produtividade'] = df_group['volume'] / df_group['vendedores'].replace({0: 1})
     media_produtividade = df_group['produtividade'].mean() if not df_group.empty else 0
     df_group['alerta_produtividade'] = df_group['produtividade'] < media_produtividade
 
-    # ALERTA DE PROJEÇÃO
     df_group['alerta_projecao'] = ''
     df_group.loc[df_group['proj_percentual'] < 80, 'alerta_projecao'] = 'vermelho'
     df_group.loc[(df_group['proj_percentual'] >= 80) & (df_group['proj_percentual'] < 100), 'alerta_projecao'] = 'amarelo'
 
-    # Filtros
     df_filtros_real = pd.read_excel(CAMINHO_REALIZADO)
     df_filtros_meta = pd.read_excel(CAMINHO_METAS)
-
     df_filtros_real.columns = df_filtros_real.columns.str.strip().str.lower()
     df_filtros_meta.columns = df_filtros_meta.columns.str.strip().str.lower()
 
@@ -103,18 +113,14 @@ def ativacao(request):
     df_filtros_meta['canal'] = df_filtros_meta['canal'].map(canal_padrao).fillna(df_filtros_meta['canal'])
 
     df_filtros = pd.concat([df_filtros_real, df_filtros_meta], ignore_index=True)
-
-    filtros = {}
-    for col in ['regional', 'coordenador', 'canal']:
-        if col in df_filtros.columns:
-            filtros[col] = sorted(df_filtros[col].dropna().unique())
+    filtros = {col: sorted(df_filtros[col].dropna().unique()) for col in ['regional', 'coordenador', 'canal'] if col in df_filtros}
 
     context = {
         'cidades': df_group.to_dict(orient='records'),
         'total_meta': int(df_group['meta'].sum()),
         'total_realizado': int(df_group['volume'].sum()),
         'total_proj': int(df_group['projecao'].sum()),
-        'total_proj_percent': f"{(df_group['projecao'].sum() / df_group['meta'].sum()) * 100:.2f}%" if df_group['meta'].sum() > 0 else "0.00%",
+        'total_proj_percent': f"{(df_group['projecao'].sum() / df_group['meta'].sum()) * 100:.2f}" if df_group['meta'].sum() > 0 else "0.00%",
         'total_ticket': f"{(df_group['receita'].sum() / df_group['volume'].sum()):.2f}" if df_group['volume'].sum() > 0 else "0.00",
         'total_produtividade': f"{(df_group['volume'].sum() / df_group['vendedores'].sum()):.2f}" if df_group['vendedores'].sum() > 0 else "0.00",
         'data_inicio': data_inicio.strftime('%Y-%m-%d'),
@@ -129,8 +135,6 @@ def ativacao(request):
 
     return render(request, 'ativacao/index.html', context)
 
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-CAMINHO_ATIVACAO = os.path.join(BASE_DIR, '..', 'dados', 'ativacao_realizado.xlsx')  # define corretamente o caminho
 
 @login_required(login_url='/')
 def ativacao_vendedor(request):
@@ -151,10 +155,7 @@ def ativacao_vendedor(request):
     for col in ['regional', 'coordenador', 'canal', 'vendedores']:
         df_base_filtros[col] = df_base_filtros[col].astype(str).str.strip().str.upper()
 
-    canal_padrao = {
-        'EXTERNO': 'PAP',
-        'PAP': 'PAP'
-    }
+    canal_padrao = {'EXTERNO': 'PAP', 'PAP': 'PAP'}
     df_base_filtros['canal'] = df_base_filtros['canal'].map(canal_padrao).fillna(df_base_filtros['canal'])
 
     filtros = {
@@ -189,7 +190,12 @@ def ativacao_vendedor(request):
     dias_restantes = dias_uteis.dias_uteis_restantes if dias_uteis else 1
     total_dias_uteis = dias_passados + dias_restantes
 
-    df_agg['projecao'] = (df_agg['volume'] / dias_passados) * total_dias_uteis
+    if data_fim.date() < hoje.date():
+        # intervalo passado, projeção = realizado
+        df_agg['projecao'] = df_agg['volume']
+    else:
+        df_agg['projecao'] = (df_agg['volume'] / dias_passados) * total_dias_uteis
+
     df_agg['proj_percentual'] = (df_agg['projecao'] / df_agg['meta'].replace({0: 1})) * 100
     df_agg['ticket_medio'] = df_agg['receita'] / df_agg['volume'].replace({0: 1})
     df_agg['produtividade'] = df_agg['volume']  # 1 vendedor por linha
@@ -203,7 +209,7 @@ def ativacao_vendedor(request):
         'total_meta': int(df_agg['meta'].sum()),
         'total_realizado': int(df_agg['volume'].sum()),
         'total_proj': int(df_agg['projecao'].sum()),
-        'total_proj_percent': f"{(df_agg['projecao'].sum() / df_agg['meta'].sum()) * 100:.2f}%" if df_agg['meta'].sum() > 0 else "0.00%",
+        'total_proj_percent': f"{(df_agg['projecao'].sum() / df_agg['meta'].sum()) * 100:.2f}" if df_agg['meta'].sum() > 0 else "0.00%",
         'total_ticket': f"{(df_agg['receita'].sum() / df_agg['volume'].sum()):.2f}" if df_agg['volume'].sum() > 0 else "0.00",
         'total_produtividade': f"{(df_agg['volume'].sum() / len(df_agg)):.2f}" if len(df_agg) > 0 else "0.00",
         'data_inicio': data_inicio.strftime('%Y-%m-%d'),
