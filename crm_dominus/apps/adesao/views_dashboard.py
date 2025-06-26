@@ -59,7 +59,7 @@ def dashboard_diaadia(request):
 
     df_real['canal'] = df_real['canal'].replace('externo', 'pap')
     df_real['volume'] = pd.to_numeric(df_real['volume'], errors='coerce').fillna(0)
-    df_real['receita'] = pd.to_numeric(df_real['receita'], errors='coerce').fillna(0) if 'receita' in df_real.columns else 0
+    df_real['receita'] = pd.to_numeric(df_real.get('receita'), errors='coerce').fillna(0)
 
     df_ativacao['canal'] = df_ativacao['canal'].replace('externo', 'pap')
     df_ativacao['volume'] = pd.to_numeric(df_ativacao['volume'], errors='coerce').fillna(0)
@@ -158,7 +158,6 @@ def dashboard_diaadia(request):
     tabela_canal_adesao = gerar_tabela_canal(df_real, df_metas)
     tabela_canal_ativacao = gerar_tabela_canal(df_ativacao, df_metas_ativacao)
 
-    # Cancelamento (sem alteração na lógica de projeção)
     cancelamento_agrupado = df_cancelamento.groupby('cidade', as_index=False).agg(cancelamento_proj=('volume', 'sum'))
     cancelamento_agrupado['cidade'] = cancelamento_agrupado['cidade'].str.strip().str.lower()
     df_limite['cidade'] = df_limite['cidade'].str.strip().str.lower()
