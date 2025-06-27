@@ -47,7 +47,6 @@ def dashboard_diaadia(request):
             df = pd.read_excel(path)
         except Exception:
             return pd.DataFrame(columns=padroes + [data_col])
-
         df.columns = df.columns.str.strip().str.lower()
         for col in padroes:
             if col in df.columns:
@@ -62,7 +61,6 @@ def dashboard_diaadia(request):
             df = pd.read_excel(path)
         except Exception:
             return pd.DataFrame(columns=padroes + [nome_coluna])
-
         df.columns = df.columns.str.strip().str.lower()
         if 'data_meta' in df.columns:
             df['data_meta'] = pd.to_datetime(df['data_meta'], dayfirst=True, errors='coerce')
@@ -82,13 +80,6 @@ def dashboard_diaadia(request):
         if canais:
             df = df[df.get('canal').isin(canais)]
         return df
-
-    # Dados completos para filtros
-    df_filtros_real = pd.read_excel(adesao_path)
-    df_filtros_real.columns = df_filtros_real.columns.str.strip().str.lower()
-    for col in ['regional', 'coordenador', 'canal']:
-        if col in df_filtros_real.columns:
-            df_filtros_real[col] = df_filtros_real[col].astype(str).str.strip().str.lower()
 
     df_adesao = aplicar_filtros(ler_df(adesao_path, ['cidade', 'regional', 'coordenador', 'canal']))
     df_ativacao = aplicar_filtros(ler_df(ativacao_path, ['cidade', 'regional', 'coordenador', 'canal']))
@@ -114,9 +105,13 @@ def dashboard_diaadia(request):
     def gerar_tabela(df_base, df_meta):
         df_base = df_base.copy()
         df_meta = df_meta.copy()
+
+        df_base['volume'] = pd.to_numeric(df_base['volume'], errors='coerce').fillna(0)
+        df_base['receita'] = pd.to_numeric(df_base.get('receita'), errors='coerce').fillna(0)
+
         grupo = df_base.groupby('canal', as_index=False).agg(
             realizado=('volume', 'sum'),
-            receita=('receita', 'sum') if 'receita' in df_base.columns else ('volume', 'sum')
+            receita=('receita', 'sum')
         )
         meta = df_meta.groupby('canal', as_index=False).agg(meta=('meta', 'sum'))
         canais = sorted(set(grupo['canal']) | set(meta['canal']))
@@ -172,11 +167,11 @@ def dashboard_diaadia(request):
         'colunas_dias': colunas_dias,
         'data_inicio': data_inicio.strftime('%Y-%m-%d'),
         'data_fim': data_fim.strftime('%Y-%m-%d'),
-        'canais_disponiveis': sorted(df_filtros_real['canal'].dropna().str.title().unique()),
+        'canais_disponiveis': sorted(df_adesao['canal'].dropna().str.title().unique()),
         'canais_selecionados': request.GET.getlist('canais'),
-        'regionais': sorted(df_filtros_real['regional'].dropna().str.title().unique()),
+        'regionais': sorted(df_adesao['regional'].dropna().str.title().unique()),
         'regionais_selecionadas': [regional] if regional else [],
-        'coordenadores': sorted(df_filtros_real['coordenador'].dropna().str.title().unique()),
+        'coordenadores': sorted(df_adesao['coordenador'].dropna().str.title().unique()),
         'coordenadores_selecionadas': [coordenador] if coordenador else [],
         'tabela_canal': tabela_canal_adesao,
         'tabela_canal_ativacao': tabela_canal_ativacao,
