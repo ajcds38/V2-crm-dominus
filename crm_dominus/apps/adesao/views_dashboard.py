@@ -81,7 +81,13 @@ def dashboard_diaadia(request):
             df = df[df.get('canal').isin(canais)]
         return df
 
-    df_adesao = aplicar_filtros(ler_df(adesao_path, ['cidade', 'regional', 'coordenador', 'canal']))
+    # Lê o original para obter todas as opções
+    df_adesao_original = ler_df(adesao_path, ['cidade', 'regional', 'coordenador', 'canal'])
+    regionais_disponiveis = sorted(df_adesao_original['regional'].dropna().str.title().unique())
+    coordenadores_disponiveis = sorted(df_adesao_original['coordenador'].dropna().str.title().unique())
+    canais_disponiveis = sorted(df_adesao_original['canal'].dropna().str.title().unique())
+
+    df_adesao = aplicar_filtros(df_adesao_original)
     df_ativacao = aplicar_filtros(ler_df(ativacao_path, ['cidade', 'regional', 'coordenador', 'canal']))
     df_cancelamento = aplicar_filtros(ler_df(cancelamento_path, ['cidade', 'regional', 'coordenador', 'canal']))
 
@@ -167,11 +173,11 @@ def dashboard_diaadia(request):
         'colunas_dias': colunas_dias,
         'data_inicio': data_inicio.strftime('%Y-%m-%d'),
         'data_fim': data_fim.strftime('%Y-%m-%d'),
-        'canais_disponiveis': sorted(df_adesao['canal'].dropna().str.title().unique()),
+        'canais_disponiveis': canais_disponiveis,
         'canais_selecionados': request.GET.getlist('canais'),
-        'regionais': sorted(df_adesao['regional'].dropna().str.title().unique()),
+        'regionais': regionais_disponiveis,
         'regionais_selecionadas': [regional] if regional else [],
-        'coordenadores': sorted(df_adesao['coordenador'].dropna().str.title().unique()),
+        'coordenadores': coordenadores_disponiveis,
         'coordenadores_selecionadas': [coordenador] if coordenador else [],
         'tabela_canal': tabela_canal_adesao,
         'tabela_canal_ativacao': tabela_canal_ativacao,
