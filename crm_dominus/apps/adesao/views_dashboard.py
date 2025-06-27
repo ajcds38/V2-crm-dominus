@@ -10,7 +10,6 @@ from diasuteis.models import DiasUteis
 def dashboard_diaadia(request):
     base_path = os.path.join(settings.BASE_DIR, 'crm_dominus', 'apps', 'dados')
 
-    # Caminhos
     adesao_path = os.path.join(base_path, 'adesao_realizado.xlsx')
     cancelamento_path = os.path.join(base_path, 'cancelamento_realizado.xlsx')
     metas_adesao_path = os.path.join(base_path, 'metas_adesao.xlsx')
@@ -18,7 +17,6 @@ def dashboard_diaadia(request):
     ativacao_path = os.path.join(base_path, 'ativacao_realizado.xlsx')
     metas_ativacao_path = os.path.join(base_path, 'metas_ativacao.xlsx')
 
-    # Filtros
     data_inicio = request.GET.get('data_inicio')
     data_fim = request.GET.get('data_fim')
     regional = request.GET.get('regional', '').strip().lower()
@@ -27,7 +25,6 @@ def dashboard_diaadia(request):
 
     hoje = datetime.today()
 
-    # Datas padrão
     if data_inicio:
         data_inicio = pd.to_datetime(data_inicio)
         data_fim = pd.to_datetime(data_fim) if data_fim else (data_inicio + pd.DateOffset(months=1)).replace(day=24)
@@ -45,7 +42,6 @@ def dashboard_diaadia(request):
     intervalo_passado = data_fim.date() < hoje.date()
     data_meta_ref = data_inicio.replace(day=25)
 
-    # Funções auxiliares
     def ler_df(path, padroes, data_col='data'):
         try:
             df = pd.read_excel(path)
@@ -58,7 +54,7 @@ def dashboard_diaadia(request):
                 df[col] = df[col].astype(str).str.strip().str.lower()
         if data_col in df.columns:
             df[data_col] = pd.to_datetime(df[data_col], dayfirst=True, errors='coerce')
-            df = df[df[data_col].notna()]
+            df = df[(df[data_col] >= data_inicio) & (df[data_col] <= data_fim)]
         return df
 
     def ler_meta(path, padroes, nome_coluna='meta'):
@@ -87,7 +83,6 @@ def dashboard_diaadia(request):
             df = df[df.get('canal').isin(canais)]
         return df
 
-    # Leitura dos dados
     df_adesao = aplicar_filtros(ler_df(adesao_path, ['cidade', 'regional', 'coordenador', 'canal']))
     df_ativacao = aplicar_filtros(ler_df(ativacao_path, ['cidade', 'regional', 'coordenador', 'canal']))
     df_cancelamento = aplicar_filtros(ler_df(cancelamento_path, ['cidade', 'regional', 'coordenador', 'canal']))
@@ -96,7 +91,6 @@ def dashboard_diaadia(request):
     df_metas_ativacao = aplicar_filtros(ler_meta(metas_ativacao_path, ['cidade', 'canal', 'regional', 'coordenador']))
     df_limite = aplicar_filtros(ler_meta(limite_path, ['cidade', 'regional', 'coordenador'], 'meta'))
 
-    # Normalizações
     for df in [df_adesao, df_ativacao]:
         df['canal'] = df['canal'].replace('externo', 'pap')
         df['volume'] = pd.to_numeric(df['volume'], errors='coerce').fillna(0)
@@ -105,13 +99,11 @@ def dashboard_diaadia(request):
     df_cancelamento['canal'] = 'interno'
     df_cancelamento['volume'] = pd.to_numeric(df_cancelamento['volume'], errors='coerce').fillna(0)
 
-    # Dias úteis
     dias = DiasUteis.objects.last()
     dias_uteis_passados = dias.dias_uteis_passados if dias else 1
     dias_uteis_restantes = dias.dias_uteis_restantes if dias else 1
     total_dias_uteis = dias_uteis_passados + dias_uteis_restantes
 
-    # Geração de tabelas por canal
     def gerar_tabela(df_base, df_meta):
         df_base = df_base.copy()
         df_meta = df_meta.copy()
@@ -148,7 +140,6 @@ def dashboard_diaadia(request):
     tabela_canal_adesao = gerar_tabela(df_adesao, df_metas_adesao)
     tabela_canal_ativacao = gerar_tabela(df_ativacao, df_metas_ativacao)
 
-    # Painel de risco
     cancelamento = df_cancelamento.groupby('cidade', as_index=False).agg(cancelamento_proj=('volume', 'sum'))
     cancelamento['cidade'] = cancelamento['cidade'].str.lower().str.strip()
     df_limite['cidade'] = df_limite['cidade'].str.lower().str.strip()
@@ -158,7 +149,6 @@ def dashboard_diaadia(request):
     cancelamento['cidade'] = cancelamento['cidade'].str.title()
     painel_risco = cancelamento.sort_values(by='projecao_percentual', ascending=False).head(10).round(1).to_dict(orient='records')
 
-    # Visão dia a dia por canal
     colunas_dias = pd.date_range(start=data_inicio, end=data_fim).strftime('%d/%m').tolist()
     df_tabela = pd.DataFrame(columns=colunas_dias)
     if not df_adesao.empty:
