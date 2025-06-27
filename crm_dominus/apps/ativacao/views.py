@@ -139,8 +139,9 @@ def ativacao(request):
 
 @login_required(login_url='/')
 def ativacao_vendedor(request):
-    # Caminho do arquivo Excel de ativação
-    CAMINHO_ATIVACAO = os.path.join(settings.BASE_DIR, 'crm_dominus', 'apps', 'dados', 'ativacao_realizado.xlsx')
+    import os
+    BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+    CAMINHO_ATIVACAO = os.path.join(BASE_DIR, '..', 'dados', 'ativacao_realizado.xlsx')
 
     hoje = datetime.today()
     primeiro_dia_mes = datetime(hoje.year, hoje.month, 1)
@@ -225,4 +226,4 @@ def ativacao_vendedor(request):
         'canais_selecionadas': request.GET.getlist('canal'),
     }
 
-    return render(request, 'ativacao/vendedor.html', context)	
+    return render(request, 'ativacao/vendedor.html', context)
