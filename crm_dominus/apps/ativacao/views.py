@@ -19,10 +19,7 @@ def ativacao(request):
 
     data_inicio = pd.to_datetime(request.GET.get('inicio', data_inicio_padrao.strftime('%Y-%m-%d')))
     data_fim = pd.to_datetime(request.GET.get('fim', data_fim_padrao.strftime('%Y-%m-%d')))
-
     intervalo_passado = data_fim.date() < hoje.date()
-
-    # Define a data_meta de referência
     data_meta_referencia = data_inicio.replace(day=25)
 
     regionais = [r.strip().upper() for r in request.GET.getlist('regional') if r.strip()]
@@ -31,7 +28,6 @@ def ativacao(request):
 
     df_real = pd.read_excel(CAMINHO_REALIZADO)
     df_metas = pd.read_excel(CAMINHO_METAS)
-
     df_real.columns = df_real.columns.str.strip().str.lower()
     df_metas.columns = df_metas.columns.str.strip().str.lower()
 
@@ -58,11 +54,9 @@ def ativacao(request):
     if regionais:
         df_real = df_real[df_real['regional'].isin(regionais)]
         df_metas = df_metas[df_metas['regional'].isin(regionais)]
-
     if coordenadores:
         df_real = df_real[df_real['coordenador'].isin(coordenadores)]
         df_metas = df_metas[df_metas['coordenador'].isin(coordenadores)]
-
     if canais:
         df_real = df_real[df_real['canal'].isin(canais)]
         df_metas = df_metas[df_metas['canal'].isin(canais)]
@@ -84,17 +78,12 @@ def ativacao(request):
     dias_restantes = dias_uteis.dias_uteis_restantes if dias_uteis else 1
     total_dias_uteis = dias_passados + dias_restantes
 
-    if intervalo_passado:
-        df_group['projecao'] = df_group['volume']
-    else:
-        df_group['projecao'] = (df_group['volume'] / dias_passados) * total_dias_uteis
-
+    df_group['projecao'] = df_group['volume'] if intervalo_passado else (df_group['volume'] / dias_passados) * total_dias_uteis
     df_group['proj_percentual'] = (df_group['projecao'] / df_group['meta'].replace({0: 1})) * 100
     df_group['ticket_medio'] = df_group['receita'] / df_group['volume'].replace({0: 1})
     df_group['produtividade'] = df_group['volume'] / df_group['vendedores'].replace({0: 1})
     media_produtividade = df_group['produtividade'].mean() if not df_group.empty else 0
     df_group['alerta_produtividade'] = df_group['produtividade'] < media_produtividade
-
     df_group['alerta_projecao'] = ''
     df_group.loc[df_group['proj_percentual'] < 80, 'alerta_projecao'] = 'vermelho'
     df_group.loc[(df_group['proj_percentual'] >= 80) & (df_group['proj_percentual'] < 100), 'alerta_projecao'] = 'amarelo'
@@ -139,7 +128,6 @@ def ativacao(request):
 
 @login_required(login_url='/')
 def ativacao_vendedor(request):
-    import os
     BASE_DIR = os.path.dirname(os.path.abspath(__file__))
     CAMINHO_ATIVACAO = os.path.join(BASE_DIR, '..', 'dados', 'ativacao_realizado.xlsx')
 
@@ -150,26 +138,20 @@ def ativacao_vendedor(request):
 
     data_inicio = pd.to_datetime(request.GET.get('inicio', data_inicio_padrao.strftime('%Y-%m-%d')))
     data_fim = pd.to_datetime(request.GET.get('fim', data_fim_padrao.strftime('%Y-%m-%d')))
+    intervalo_passado = data_fim.date() < hoje.date()
 
     regionais = [r.strip().upper() for r in request.GET.getlist('regional') if r.strip()]
     coordenadores = [c.strip().upper() for c in request.GET.getlist('coordenador') if c.strip()]
     canais = [c.strip().upper() for c in request.GET.getlist('canal') if c.strip()]
 
-    df_base_filtros = pd.read_excel(CAMINHO_ATIVACAO)
-    df_base_filtros.columns = df_base_filtros.columns.str.strip().str.lower()
+    df_real = pd.read_excel(CAMINHO_ATIVACAO)
+    df_real.columns = df_real.columns.str.strip().str.lower()
+
     for col in ['regional', 'coordenador', 'canal', 'vendedores']:
-        df_base_filtros[col] = df_base_filtros[col].astype(str).str.strip().str.upper()
+        df_real[col] = df_real[col].astype(str).str.strip().str.upper()
 
     canal_padrao = {'EXTERNO': 'PAP', 'PAP': 'PAP'}
-    df_base_filtros['canal'] = df_base_filtros['canal'].map(canal_padrao).fillna(df_base_filtros['canal'])
-
-    filtros = {
-        'regional': sorted(df_base_filtros['regional'].dropna().unique()),
-        'coordenador': sorted(df_base_filtros['coordenador'].dropna().unique()),
-        'canal': sorted(df_base_filtros['canal'].dropna().unique()),
-    }
-
-    df_real = df_base_filtros.copy()
+    df_real['canal'] = df_real['canal'].map(canal_padrao).fillna(df_real['canal'])
     df_real['data'] = pd.to_datetime(df_real['data'], dayfirst=True, errors='coerce')
     df_real = df_real[(df_real['data'] >= data_inicio) & (df_real['data'] <= data_fim)]
 
@@ -186,27 +168,27 @@ def ativacao_vendedor(request):
         'regional': 'first',
         'coordenador': 'first'
     }).reset_index()
-
     df_agg['volume'] = df_real.groupby(colunas_chave).size().values
-    df_agg['meta'] = 22  # META FIXA PARA ATIVAÇÃO
+    df_agg['meta'] = 22
 
     dias_uteis = DiasUteis.objects.last()
     dias_passados = dias_uteis.dias_uteis_passados if dias_uteis else 1
     dias_restantes = dias_uteis.dias_uteis_restantes if dias_uteis else 1
     total_dias_uteis = dias_passados + dias_restantes
 
-    if data_fim.date() < hoje.date():
-        df_agg['projecao'] = df_agg['volume']
-    else:
-        df_agg['projecao'] = (df_agg['volume'] / dias_passados) * total_dias_uteis
-
+    df_agg['projecao'] = df_agg['volume'] if intervalo_passado else (df_agg['volume'] / dias_passados) * total_dias_uteis
     df_agg['proj_percentual'] = (df_agg['projecao'] / df_agg['meta'].replace({0: 1})) * 100
     df_agg['ticket_medio'] = df_agg['receita'] / df_agg['volume'].replace({0: 1})
-    df_agg['produtividade'] = df_agg['volume']  # 1 vendedor por linha
+    df_agg['produtividade'] = df_agg['volume']
     media_produtividade = df_agg['produtividade'].mean() if not df_agg.empty else 0
     df_agg['alerta_produtividade'] = df_agg['produtividade'] < media_produtividade
-
     df_agg = df_agg.sort_values(by='projecao', ascending=False)
+
+    filtros = {
+        'regional': sorted(df_real['regional'].dropna().unique()),
+        'coordenador': sorted(df_real['coordenador'].dropna().unique()),
+        'canal': sorted(df_real['canal'].dropna().unique()),
+    }
 
     context = {
         'cidades': df_agg.to_dict(orient='records'),
