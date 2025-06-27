@@ -4,6 +4,7 @@ from datetime import datetime, timedelta
 import pandas as pd
 import os
 from diasuteis.models import DiasUteis
+from django.conf import settings
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 CAMINHO_REALIZADO = os.path.join(BASE_DIR, '..', 'dados', 'ativacao_realizado.xlsx')
@@ -224,4 +225,4 @@ def ativacao_vendedor(request):
         'canais_selecionadas': request.GET.getlist('canal'),
     }
 
-    return render(request, 'ativacao/vendedor.html', context)
+    return render(request, 'ativacao/vendedor.html', context)	
