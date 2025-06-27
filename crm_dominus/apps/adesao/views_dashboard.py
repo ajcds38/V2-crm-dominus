@@ -1,4 +1,5 @@
 from django.contrib.auth.decorators import login_required
+from django.views.decorators.cache import cache_page
 from django.shortcuts import render
 import pandas as pd
 import os
@@ -6,6 +7,7 @@ from datetime import datetime, timedelta
 from django.conf import settings
 from diasuteis.models import DiasUteis
 
+@cache_page(120)  # cache de 2 minutos
 @login_required(login_url='/')
 def dashboard_diaadia(request):
     base_path = os.path.join(settings.BASE_DIR, 'crm_dominus', 'apps', 'dados')
@@ -81,7 +83,6 @@ def dashboard_diaadia(request):
             df = df[df.get('canal').isin(canais)]
         return df
 
-    # Lê o original para obter todas as opções
     df_adesao_original = ler_df(adesao_path, ['cidade', 'regional', 'coordenador', 'canal'])
     regionais_disponiveis = sorted(df_adesao_original['regional'].dropna().str.title().unique())
     coordenadores_disponiveis = sorted(df_adesao_original['coordenador'].dropna().str.title().unique())
