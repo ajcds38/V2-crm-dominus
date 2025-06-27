@@ -138,6 +138,9 @@ def ativacao(request):
 
 @login_required(login_url='/')
 def ativacao_vendedor(request):
+    # Caminho do arquivo Excel de ativação
+    CAMINHO_ATIVACAO = os.path.join(settings.BASE_DIR, 'crm_dominus', 'apps', 'dados', 'ativacao_realizado.xlsx')
+
     hoje = datetime.today()
     primeiro_dia_mes = datetime(hoje.year, hoje.month, 1)
     data_inicio_padrao = (primeiro_dia_mes - timedelta(days=7)).replace(day=25)
@@ -191,7 +194,6 @@ def ativacao_vendedor(request):
     total_dias_uteis = dias_passados + dias_restantes
 
     if data_fim.date() < hoje.date():
-        # intervalo passado, projeção = realizado
         df_agg['projecao'] = df_agg['volume']
     else:
         df_agg['projecao'] = (df_agg['volume'] / dias_passados) * total_dias_uteis
