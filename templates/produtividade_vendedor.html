@@ -1,0 +1,149 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load dict_extras %}
+
+{% block content %}
+
+<h2 class="titulo-pagina">Produtividade por Vendedor</h2>
+
+<form method="get" class="form-filtro">
+    <div class="filtros-bloco">
+        <div class="filtros-linha">
+            <div class="form-campo">
+                <label for="data_inicio">Data Início:</label>
+                <input type="date" id="data_inicio" name="data_inicio" class="filtro-visual" value="{{ data_inicio }}">
+            </div>
+
+            <div class="form-campo">
+                <label for="data_fim">Data Fim:</label>
+                <input type="date" id="data_fim" name="data_fim" class="filtro-visual" value="{{ data_fim }}">
+            </div>
+
+            <div class="form-campo">
+                <label for="regional">Regional:</label>
+                <select name="regional" id="regional" class="filtro-visual">
+                    <option value="">Todas</option>
+                    {% for r in regionais %}
+                        <option value="{{ r }}" {% if r == filtros_selecionados.regional %}selected{% endif %}>{{ r }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="form-campo">
+                <label for="coordenador">Coordenador:</label>
+                <select name="coordenador" id="coordenador" class="filtro-visual">
+                    <option value="">Todos</option>
+                    {% for c in coordenadores %}
+                        <option value="{{ c }}" {% if c == filtros_selecionados.coordenador %}selected{% endif %}>{{ c }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+        </div>
+
+        <div class="filtros-linha">
+            <div class="form-campo dropdown-canal">
+                <label for="canal">Canal:</label>
+                <button type="button" class="filtro-visual canal-toggle" onclick="toggleDropdown('canalDropdown')">Selecionar canais</button>
+                <div id="canalDropdown" class="canal-dropdown">
+                    {% for c in canais %}
+                        <label><input type="checkbox" name="canal" value="{{ c }}" {% if c in filtros_selecionados.canais %}checked{% endif %}> {{ c }}</label>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <div class="form-campo dropdown-canal">
+                <label for="vendedor">Vendedores:</label>
+                <button type="button" class="filtro-visual canal-toggle" onclick="toggleDropdown('vendedorDropdown')">Selecionar vendedores</button>
+                <div id="vendedorDropdown" class="canal-dropdown" style="grid-template-columns: 1fr; max-height: 250px; overflow-y: auto;">
+                    {% for v in vendedores %}
+                        <label><input type="checkbox" name="vendedor" value="{{ v }}" {% if v in filtros_selecionados.vendedores %}checked{% endif %}> {{ v }}</label>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <div class="form-campo">
+                <label style="visibility: hidden;">Filtrar</label>
+                <button type="submit" class="btn-filtrar">Filtrar</button>
+            </div>
+        </div>
+    </div>
+</form>
+
+<hr>
+
+<div class="tabela-resultado">
+    <table class="tabela-dados">
+        <thead>
+            <tr>
+                {% for col in colunas %}
+                    <th>{{ col }}</th>
+                {% endfor %}
+            </tr>
+        </thead>
+        <tbody>
+            {% for linha in df_tabela %}
+                <tr>
+                    {% for col in colunas %}
+                        <td style="text-align: center; {% if linha.Vendedor == 'TOTAL' %}background-color: #b8923a; color: black; font-weight: bold;{% endif %}">
+                            {{ linha|get_item:col }}
+                        </td>
+                    {% endfor %}
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<style>
+/* Estilo dos dropdowns */
+.canal-dropdown {
+    display: none;
+    position: absolute;
+    background-color: #111;
+    color: white;
+    border: 1px solid #b8923a;
+    padding: 10px;
+    z-index: 999;
+    width: 300px;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+}
+#vendedorDropdown {
+    grid-template-columns: 1fr !important;
+}
+.dropdown-canal {
+    position: relative;
+}
+.canal-toggle {
+    background-color: #111;
+    color: #b8923a;
+    border: 1px solid #b8923a;
+    padding: 5px 10px;
+    cursor: pointer;
+}
+
+/* Cabeçalho da tabela */
+.tabela-dados th {
+    background-color: #b8923a;
+    color: black;
+    text-align: center;
+    font-weight: bold;
+}
+</style>
+
+<script>
+function toggleDropdown(id) {
+    const dropdown = document.getElementById(id);
+    dropdown.style.display = dropdown.style.display === "grid" ? "none" : "grid";
+}
+window.addEventListener("click", function(e) {
+    document.querySelectorAll('.canal-dropdown').forEach(drop => {
+        const button = drop.previousElementSibling;
+        if (!drop.contains(e.target) && !button.contains(e.target)) {
+            drop.style.display = "none";
+        }
+    });
+});
+</script>
+
+{% endblock %}

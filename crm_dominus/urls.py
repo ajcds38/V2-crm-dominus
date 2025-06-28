@@ -5,6 +5,7 @@ from django.contrib.auth import views as auth_views
 from crm_dominus.apps.adesao.views_dashboard import dashboard_diaadia
 from crm_dominus.apps.saldocidades.views import saldo_cidades
 from backlog.views import backlog_instalacoes  # ✅ Nova importação
+from crm_dominus.apps.produtividade.produtividade_vendedor import produtividade_vendedor  # ✅ Caminho corrigido
 
 urlpatterns = [
     path('', lambda request: redirect('login/')),
@@ -18,7 +19,8 @@ urlpatterns = [
     path('diasuteis/', include('diasuteis.urls')),
     path('dashboard/diaadia/', dashboard_diaadia, name='dashboard_diaadia'),
     path('saldo/', saldo_cidades, name='saldo_cidades'),
-    
-    # ✅ Nova rota para Backlog de Instalações
     path('backlog/', backlog_instalacoes, name='backlog_instalacoes'),
+
+    # ✅ Nova rota para Produtividade Vendedor
+    path('produtividade-vendedor/', produtividade_vendedor, name='produtividade_vendedor'),
 ]
