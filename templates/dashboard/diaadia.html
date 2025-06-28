@@ -86,14 +86,14 @@
         <tr style="background-color: #b8923a; color: black; font-weight: bold;">
             <td style="color: black;"><strong>{{ linha.canal }}</strong></td>
             {% for dia in colunas_dias %}
-                <td style="color: black;"><strong>{{ linha|get:dia|default:0|floatformat:0 }}</strong></td>
+                <td style="color: black;"><strong>{{ linha|dict_get:dia|default:0|floatformat:0 }}</strong></td>
             {% endfor %}
         </tr>
         {% elif linha.canal != 'Diária Necessária' and linha.canal != 'Diária Entregue' %}
         <tr>
             <td><strong>{{ linha.canal|title }}</strong></td>
             {% for dia in colunas_dias %}
-                <td>{{ linha|get:dia|default:0|floatformat:0 }}</td>
+                <td>{{ linha|dict_get:dia|default:0|floatformat:0 }}</td>
             {% endfor %}
         </tr>
         {% endif %}
@@ -180,7 +180,7 @@
 </div>
 
 <br>
-<h2 class="titulo-pagina">🚨 Painel de Risco - Cancelamento - As 10 cidades ofensoras </h2>
+<h2 class="titulo-pagina">🚨 Painel de Risco - Cancelamento - As 10 cidades ofensoras</h2>
 <table>
     <thead>
         <tr style="background-color: #b8923a; color: black;">

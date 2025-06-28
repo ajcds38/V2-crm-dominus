@@ -31,12 +31,8 @@ def dashboard_diaadia(request):
         data_inicio = pd.to_datetime(data_inicio)
         data_fim = pd.to_datetime(data_fim) if data_fim else (data_inicio + pd.DateOffset(months=1)).replace(day=24)
     else:
-        if hoje.day < 25:
-            data_inicio = (hoje.replace(day=1) - timedelta(days=1)).replace(day=25)
-            data_fim = hoje.replace(day=24)
-        else:
-            data_inicio = hoje.replace(day=25)
-            data_fim = (data_inicio + timedelta(days=40)).replace(day=24)
+        data_inicio = pd.to_datetime("2025-06-25")
+        data_fim = pd.to_datetime("2025-07-24")
 
     if data_fim < data_inicio:
         data_inicio = data_fim - pd.DateOffset(months=1)
