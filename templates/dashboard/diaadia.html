@@ -12,12 +12,10 @@
                 <label for="data_inicio">Data Início:</label>
                 <input type="date" id="data_inicio" name="data_inicio" class="filtro-visual" value="{{ data_inicio }}">
             </div>
-
             <div class="form-campo">
                 <label for="data_fim">Data Fim:</label>
                 <input type="date" id="data_fim" name="data_fim" class="filtro-visual" value="{{ data_fim }}">
             </div>
-
             <div class="form-campo">
                 <label for="regional">Regional:</label>
                 <select name="regional" id="regional" class="filtro-visual">
@@ -27,7 +25,6 @@
                     {% endfor %}
                 </select>
             </div>
-
             <div class="form-campo">
                 <label for="coordenador">Coordenador:</label>
                 <select name="coordenador" id="coordenador" class="filtro-visual">
@@ -37,7 +34,6 @@
                     {% endfor %}
                 </select>
             </div>
-
             <div class="form-campo dropdown-canal" style="position: relative;">
                 <label for="canal">Canal:</label>
                 <button type="button" class="filtro-visual canal-toggle" onclick="toggleDropdown()">Selecionar canais</button>
@@ -58,7 +54,6 @@
                     {% endfor %}
                 </div>
             </div>
-
             <div class="form-campo">
                 <label style="visibility: hidden;">Filtrar</label>
                 <button type="submit" class="btn-filtrar">Filtrar</button>
