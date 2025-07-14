@@ -71,10 +71,15 @@ def produtividade_vendedor(request):
         return periodos
 
     def nome_coluna_periodo(inicio, fim):
+        meses_pt = {
+            1: "Janeiro", 2: "Fevereiro", 3: "Março", 4: "Abril", 5: "Maio", 6: "Junho",
+            7: "Julho", 8: "Agosto", 9: "Setembro", 10: "Outubro", 11: "Novembro", 12: "Dezembro"
+        }
         dias = pd.date_range(inicio, fim)
         meses = dias.to_series().dt.to_period("M")
         mais_frequente = meses.value_counts().idxmax()
-        return mais_frequente.strftime('%B/%Y').capitalize()
+        nome = f"{meses_pt[mais_frequente.month]}/{mais_frequente.year}"
+        return nome
 
     periodos = gerar_periodos(data_inicio, data_fim)
 
@@ -100,6 +105,10 @@ def produtividade_vendedor(request):
     df_final = df_final.reset_index()
     df_final = df_final[['Vendedor'] + colunas]
 
+    # Adiciona coluna Total por vendedor
+    df_final['Total'] = df_final[colunas].sum(axis=1)
+
+    # Linha TOTAL (produtividade média por mês)
     total = {}
     for mes in colunas:
         vendas_mes = df_final[mes]
@@ -107,14 +116,16 @@ def produtividade_vendedor(request):
         vendedores_com_venda = (vendas_mes > 0).sum()
         media = round(total_vendas / vendedores_com_venda, 2) if vendedores_com_venda else 0
         total[mes] = media
-    df_total = pd.DataFrame([['TOTAL'] + [total[mes] for mes in colunas]], columns=['Vendedor'] + colunas)
+    total['Total'] = 0  # Ou soma real de total_vendas se desejar
+
+    df_total = pd.DataFrame([['TOTAL'] + [total[mes] for mes in colunas] + [total['Total']]], columns=['Vendedor'] + colunas + ['Total'])
     df_final = pd.concat([df_final, df_total], ignore_index=True)
 
     context = {
         'data_inicio': data_inicio.strftime('%Y-%m-%d'),
         'data_fim': data_fim.strftime('%Y-%m-%d'),
         'df_tabela': df_final.to_dict(orient='records'),
-        'colunas': ['Vendedor'] + colunas,
+        'colunas': ['Vendedor'] + colunas + ['Total'],
         'regionais': regionais,
         'coordenadores': coordenadores,
         'canais': canais_disponiveis,
