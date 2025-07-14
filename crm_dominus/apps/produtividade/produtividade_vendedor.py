@@ -116,10 +116,20 @@ def produtividade_vendedor(request):
         vendedores_com_venda = (vendas_mes > 0).sum()
         media = round(total_vendas / vendedores_com_venda, 2) if vendedores_com_venda else 0
         total[mes] = media
-    total['Total'] = 0  # Ou soma real de total_vendas se desejar
+    total['Total'] = 0  # Média geral não se aplica à soma total
 
     df_total = pd.DataFrame([['TOTAL'] + [total[mes] for mes in colunas] + [total['Total']]], columns=['Vendedor'] + colunas + ['Total'])
-    df_final = pd.concat([df_final, df_total], ignore_index=True)
+
+    # Linha TOTAL VENDAS (soma real por mês e total geral)
+    soma_total = {}
+    for mes in colunas:
+        soma_total[mes] = df_final[mes].sum()
+    soma_total['Total'] = df_final['Total'].sum()
+
+    df_soma = pd.DataFrame([['TOTAL VENDAS'] + [soma_total[mes] for mes in colunas] + [soma_total['Total']]], columns=['Vendedor'] + colunas + ['Total'])
+
+    # Junta tudo
+    df_final = pd.concat([df_final, df_total, df_soma], ignore_index=True)
 
     context = {
         'data_inicio': data_inicio.strftime('%Y-%m-%d'),
