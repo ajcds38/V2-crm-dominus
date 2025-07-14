@@ -10,7 +10,6 @@ def produtividade_vendedor(request):
     base_path = os.path.join(settings.BASE_DIR, 'crm_dominus', 'apps', 'dados')
     excel_path = os.path.join(base_path, 'adesao_produtividade.xlsx')
 
-    # Base original completa para capturar filtros disponíveis
     df_original = pd.read_excel(excel_path)
     df_original.columns = df_original.columns.str.strip().str.lower()
     df_original = df_original.rename(columns={
@@ -22,23 +21,20 @@ def produtividade_vendedor(request):
         if col in df_original.columns:
             df_original[col] = df_original[col].astype(str).str.strip().str.upper()
 
-    # Captura filtros disponíveis ANTES de aplicar qualquer filtro
     regionais = sorted(df_original['regional'].dropna().unique())
     coordenadores = sorted(df_original['coordenador'].dropna().unique())
     canais_disponiveis = sorted(df_original['canal'].dropna().unique())
     vendedores_disponiveis = sorted(df_original['vendedor'].dropna().unique())
 
-    # Cópia da base original para aplicação de filtros
     df = df_original.copy()
     df['data'] = pd.to_datetime(df['data'], dayfirst=True, errors='coerce')
     df = df.dropna(subset=['data'])
 
-    # Filtros recebidos da URL
     data_inicio = request.GET.get('data_inicio')
     data_fim = request.GET.get('data_fim')
 
     if not data_inicio or not data_fim:
-        data_inicio = datetime(2025, 4, 25)
+        data_inicio = datetime(2025, 3, 25)
         data_fim = datetime(2025, 7, 24)
     else:
         data_inicio = pd.to_datetime(data_inicio)
@@ -62,35 +58,35 @@ def produtividade_vendedor(request):
         vendedores = [v.upper() for v in vendedores]
         df = df[df['vendedor'].isin(vendedores)]
 
-    # Geração dos períodos 25 a 24
     def gerar_periodos(d_inicio, d_fim):
-        datas = []
+        periodos = []
         atual = d_inicio.replace(day=25)
         if d_inicio.day < 25:
             atual -= pd.DateOffset(months=1)
         while atual <= d_fim:
             proximo = atual + pd.DateOffset(months=1)
-            datas.append((atual, proximo - timedelta(days=1)))
+            fim_periodo = proximo - timedelta(days=1)
+            periodos.append((atual, fim_periodo))
             atual = proximo
-        return datas
+        return periodos
+
+    def nome_coluna_periodo(inicio, fim):
+        dias = pd.date_range(inicio, fim)
+        meses = dias.to_series().dt.to_period("M")
+        mais_frequente = meses.value_counts().idxmax()
+        return mais_frequente.strftime('%B/%Y').capitalize()
 
     periodos = gerar_periodos(data_inicio, data_fim)
 
-    # Mapeamento de meses em português
-    meses_pt = {
-        1: "Janeiro", 2: "Fevereiro", 3: "Março", 4: "Abril", 5: "Maio", 6: "Junho",
-        7: "Julho", 8: "Agosto", 9: "Setembro", 10: "Outubro", 11: "Novembro", 12: "Dezembro"
-    }
-
     colunas = []
-    coluna_ordem = []  # Para ordenar corretamente
+    coluna_ordem = []
     resultado = {}
 
     for vendedor in df['vendedor'].unique():
         linha = {}
         df_vend = df[df['vendedor'] == vendedor]
         for inicio, fim in periodos:
-            nome_coluna = f"{meses_pt[inicio.month]}/{inicio.year}"
+            nome_coluna = nome_coluna_periodo(inicio, fim)
             colunas.append(nome_coluna)
             coluna_ordem.append((inicio.year, inicio.month, nome_coluna))
             count = df_vend[(df_vend['data'] >= inicio) & (df_vend['data'] <= fim)].shape[0]
@@ -104,7 +100,6 @@ def produtividade_vendedor(request):
     df_final = df_final.reset_index()
     df_final = df_final[['Vendedor'] + colunas]
 
-    # Linha TOTAL
     total = {}
     for mes in colunas:
         vendas_mes = df_final[mes]
