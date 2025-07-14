@@ -3,7 +3,7 @@ from django.views.decorators.cache import cache_page
 from django.shortcuts import render
 import pandas as pd
 import os
-from datetime import datetime, timedelta
+from datetime import datetime
 from django.conf import settings
 from diasuteis.models import DiasUteis
 
@@ -40,6 +40,9 @@ def dashboard_diaadia(request):
     intervalo_passado = data_fim.date() < hoje.date()
     data_meta_ref = data_inicio.replace(day=25)
 
+    def obter_data_meta_referencia(data_inicio, meses_antes=0):
+        return (data_inicio - pd.DateOffset(months=meses_antes)).replace(day=25)
+
     def ler_df(path, padroes, data_col='data'):
         try:
             df = pd.read_excel(path)
@@ -54,7 +57,7 @@ def dashboard_diaadia(request):
             df = df[(df[data_col] >= data_inicio) & (df[data_col] <= data_fim)]
         return df
 
-    def ler_meta(path, padroes, nome_coluna='meta'):
+    def ler_meta(path, padroes, nome_coluna='meta', referencia=None):
         try:
             df = pd.read_excel(path)
         except Exception:
@@ -62,7 +65,8 @@ def dashboard_diaadia(request):
         df.columns = df.columns.str.strip().str.lower()
         if 'data_meta' in df.columns:
             df['data_meta'] = pd.to_datetime(df['data_meta'], dayfirst=True, errors='coerce')
-            df = df[df['data_meta'] == data_meta_ref]
+            if referencia:
+                df = df[df['data_meta'] == referencia]
         if df.empty:
             return pd.DataFrame(columns=padroes + [nome_coluna])
         for col in padroes:
@@ -88,9 +92,9 @@ def dashboard_diaadia(request):
     df_ativacao = aplicar_filtros(ler_df(ativacao_path, ['cidade', 'regional', 'coordenador', 'canal']))
     df_cancelamento = aplicar_filtros(ler_df(cancelamento_path, ['cidade', 'regional', 'coordenador', 'canal']))
 
-    df_metas_adesao = aplicar_filtros(ler_meta(metas_adesao_path, ['cidade', 'canal', 'regional', 'coordenador']))
-    df_metas_ativacao = aplicar_filtros(ler_meta(metas_ativacao_path, ['cidade', 'canal', 'regional', 'coordenador']))
-    df_limite = aplicar_filtros(ler_meta(limite_path, ['cidade', 'regional', 'coordenador'], 'meta'))
+    df_metas_adesao = aplicar_filtros(ler_meta(metas_adesao_path, ['cidade', 'canal', 'regional', 'coordenador'], referencia=data_meta_ref))
+    df_metas_ativacao = aplicar_filtros(ler_meta(metas_ativacao_path, ['cidade', 'canal', 'regional', 'coordenador'], referencia=data_meta_ref))
+    df_limite = aplicar_filtros(ler_meta(limite_path, ['cidade', 'regional', 'coordenador'], 'meta', referencia=data_meta_ref))
 
     for df in [df_adesao, df_ativacao]:
         df['canal'] = df['canal'].replace('externo', 'pap')
@@ -109,9 +113,6 @@ def dashboard_diaadia(request):
         df_base = df_base.copy()
         df_meta = df_meta.copy()
 
-        df_base['volume'] = pd.to_numeric(df_base['volume'], errors='coerce').fillna(0)
-        df_base['receita'] = pd.to_numeric(df_base.get('receita'), errors='coerce').fillna(0)
-
         grupo = df_base.groupby('canal', as_index=False).agg(
             realizado=('volume', 'sum'),
             receita=('receita', 'sum')
@@ -127,7 +128,8 @@ def dashboard_diaadia(request):
             df_result['projecao'] = (df_result['realizado'] / dias_uteis_passados) * total_dias_uteis
 
         df_result['projecao_percentual'] = (df_result['projecao'] / df_result['meta'].replace(0, 1)) * 100
-        df_result['ticket_medio'] = df_result.apply(lambda r: r['receita'] / r['realizado'] if r['realizado'] else 0, axis=1)
+        df_result['ticket_medio'] = df_result['receita'] / df_result['realizado'].replace(0, 1)
+        df_result['ticket_medio'] = df_result['ticket_medio'].fillna(0)
 
         total = {
             'canal': 'total',
