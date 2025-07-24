@@ -42,7 +42,7 @@ def backlog_instalacoes(request):
             return df[df[coluna].isin(valores_filtrados)]
         return df
 
-    # Filtro principal baseado na coluna de ativação (❌ ou dentro do intervalo)
+    # Aplica filtro principal de ativação (inclusive para ❌)
     data_inicio = pd.to_datetime(data_inicio)
     data_fim = pd.to_datetime(data_fim)
     df = df[(df['ativacao'].isna()) | ((df['ativacao'] >= data_inicio) & (df['ativacao'] <= data_fim))]
@@ -53,7 +53,7 @@ def backlog_instalacoes(request):
     df = aplicar_filtro(df, 'cidade', cidades)
     df = aplicar_filtro(df, 'vendedor', vendedores)
 
-    # Tabela por cliente (adesão e ativação dentro do filtro de ativação)
+    # Aqui estamos usando SOMENTE os dados já filtrados
     df_resultado = df[['cliente', 'adesao', 'ativacao']].drop_duplicates(subset='cliente')
 
     df_resultado['adesao_str'] = df_resultado['adesao'].dt.strftime('%d/%m/%Y').fillna('')
