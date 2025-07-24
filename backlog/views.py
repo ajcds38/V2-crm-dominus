@@ -43,7 +43,6 @@ def backlog_instalacoes(request):
             return df[df[coluna].isin(valores_filtrados)]
         return df
 
-    # Filtro baseado apenas na coluna 'ativacao'
     if data_inicio and data_fim:
         data_inicio = pd.to_datetime(data_inicio)
         data_fim = pd.to_datetime(data_fim)
@@ -55,25 +54,14 @@ def backlog_instalacoes(request):
     df = aplicar_filtro(df, 'cidade', cidades)
     df = aplicar_filtro(df, 'vendedor', vendedores)
 
-    # Resultado final por cliente
-    clientes = df['cliente'].dropna().unique()
-    resultado = []
+    # Resultado otimizado por cliente
+    df_resultado = df[['cliente', 'adesao', 'ativacao']].drop_duplicates(subset='cliente')
+    df_resultado['adesao'] = df_resultado['adesao'].dt.strftime('%d/%m/%Y').fillna('')
+    df_resultado['ativacao'] = df_resultado['ativacao'].apply(
+        lambda x: x.strftime('%d/%m/%Y') if pd.notnull(x) else '<span style="color: white; background-color: red; padding: 2px 6px; border-radius: 4px;">❌</span>'
+    )
 
-    for nome in sorted(clientes):
-        cliente_df = df[df['cliente'] == nome]
-        linha = cliente_df.iloc[0]
-
-        adesao_formatada = linha['adesao'].strftime('%d/%m/%Y') if pd.notnull(linha['adesao']) else ''
-        if pd.notnull(linha['ativacao']):
-            ativacao_formatada = linha['ativacao'].strftime('%d/%m/%Y')
-        else:
-            ativacao_formatada = '<span style="color: white; background-color: red; padding: 2px 6px; border-radius: 4px;">❌</span>'
-
-        resultado.append({
-            'nome': nome.title(),
-            'adesao': adesao_formatada,
-            'ativacao': ativacao_formatada,
-        })
+    resultado = df_resultado.rename(columns={'cliente': 'nome'}).to_dict(orient='records')
 
     # Listas únicas para filtros
     lista_regionais = sorted(df['regional'].dropna().unique())
