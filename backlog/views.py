@@ -28,7 +28,7 @@ def backlog_instalacoes(request):
     df['adesao'] = pd.to_datetime(df['adesao'], dayfirst=True, errors='coerce')
     df['ativacao'] = pd.to_datetime(df['ativacao'], dayfirst=True, errors='coerce')
 
-    # Filtros
+    # Filtros GET
     data_inicio = request.GET.get('data_inicio')
     data_fim = request.GET.get('data_fim')
     regionais = request.GET.getlist('regional')
@@ -43,13 +43,11 @@ def backlog_instalacoes(request):
             return df[df[coluna].isin(valores_filtrados)]
         return df
 
+    # Filtro baseado apenas na coluna 'ativacao'
     if data_inicio and data_fim:
         data_inicio = pd.to_datetime(data_inicio)
         data_fim = pd.to_datetime(data_fim)
-        df = df[
-            ((df['adesao'] >= data_inicio) & (df['adesao'] <= data_fim)) |
-            ((df['ativacao'] >= data_inicio) & (df['ativacao'] <= data_fim))
-        ]
+        df = df[(df['ativacao'] >= data_inicio) & (df['ativacao'] <= data_fim)]
 
     df = aplicar_filtro(df, 'regional', regionais)
     df = aplicar_filtro(df, 'coordenador', coordenadores)
@@ -57,22 +55,27 @@ def backlog_instalacoes(request):
     df = aplicar_filtro(df, 'cidade', cidades)
     df = aplicar_filtro(df, 'vendedor', vendedores)
 
-    # Resultado final
+    # Resultado final por cliente
     clientes = df['cliente'].dropna().unique()
     resultado = []
 
     for nome in sorted(clientes):
         cliente_df = df[df['cliente'] == nome]
-        tem_adesao = cliente_df['adesao'].notna().any()
-        tem_ativacao = cliente_df['ativacao'].notna().any()
+        linha = cliente_df.iloc[0]
+
+        adesao_formatada = linha['adesao'].strftime('%d/%m/%Y') if pd.notnull(linha['adesao']) else ''
+        if pd.notnull(linha['ativacao']):
+            ativacao_formatada = linha['ativacao'].strftime('%d/%m/%Y')
+        else:
+            ativacao_formatada = '<span style="color: white; background-color: red; padding: 2px 6px; border-radius: 4px;">❌</span>'
 
         resultado.append({
             'nome': nome.title(),
-            'adesao': '✅' if tem_adesao else '<span style="color: white; background-color: red; padding: 2px 6px; border-radius: 4px;">❌</span>',
-            'ativacao': '✅' if tem_ativacao else '<span style="color: white; background-color: red; padding: 2px 6px; border-radius: 4px;">❌</span>',
+            'adesao': adesao_formatada,
+            'ativacao': ativacao_formatada,
         })
 
-    # Listas únicas para os filtros
+    # Listas únicas para filtros
     lista_regionais = sorted(df['regional'].dropna().unique())
     lista_coordenadores = sorted(df['coordenador'].dropna().unique())
     lista_canais = sorted(df['canal'].dropna().unique())
