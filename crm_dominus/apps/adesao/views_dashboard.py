@@ -7,17 +7,16 @@ from datetime import datetime
 from django.conf import settings
 from diasuteis.models import DiasUteis
 
-@cache_page(120)  # cache de 2 minutos
+@cache_page(120)
 @login_required(login_url='/')
 def dashboard_diaadia(request):
     base_path = os.path.join(settings.BASE_DIR, 'crm_dominus', 'apps', 'dados')
 
-    adesao_path = os.path.join(base_path, 'adesao_realizado.xlsx')
+    caminho_arquivo_unificado = os.path.join(base_path, 'Atualizacao_CRM.xlsx')
     cancelamento_path = os.path.join(base_path, 'cancelamento_realizado.xlsx')
     metas_adesao_path = os.path.join(base_path, 'metas_adesao.xlsx')
-    limite_path = os.path.join(base_path, 'limite_cancelamento.xlsx')
-    ativacao_path = os.path.join(base_path, 'ativacao_realizado.xlsx')
     metas_ativacao_path = os.path.join(base_path, 'metas_ativacao.xlsx')
+    limite_path = os.path.join(base_path, 'limite_cancelamento.xlsx')
 
     data_inicio = request.GET.get('data_inicio')
     data_fim = request.GET.get('data_fim')
@@ -26,53 +25,39 @@ def dashboard_diaadia(request):
     canais = [c.strip().lower() for c in request.GET.getlist('canais') if c.strip()]
 
     hoje = datetime.today()
-
     if data_inicio:
         data_inicio = pd.to_datetime(data_inicio)
         data_fim = pd.to_datetime(data_fim) if data_fim else (data_inicio + pd.DateOffset(months=1)).replace(day=24)
     else:
         data_inicio = pd.to_datetime("2025-06-25")
         data_fim = pd.to_datetime("2025-07-24")
-
     if data_fim < data_inicio:
         data_inicio = data_fim - pd.DateOffset(months=1)
 
     intervalo_passado = data_fim.date() < hoje.date()
     data_meta_ref = data_inicio.replace(day=25)
 
-    def obter_data_meta_referencia(data_inicio, meses_antes=0):
-        return (data_inicio - pd.DateOffset(months=meses_antes)).replace(day=25)
+    # Leitura da única aba (Planilha 1)
+    df_base = pd.read_excel(caminho_arquivo_unificado)
+    df_base.columns = df_base.columns.str.strip().str.lower()
 
-    def ler_df(path, padroes, data_col='data'):
-        try:
-            df = pd.read_excel(path)
-        except Exception:
-            return pd.DataFrame(columns=padroes + [data_col])
-        df.columns = df.columns.str.strip().str.lower()
-        for col in padroes:
-            if col in df.columns:
-                df[col] = df[col].astype(str).str.strip().str.lower()
-        if data_col in df.columns:
-            df[data_col] = pd.to_datetime(df[data_col], dayfirst=True, errors='coerce')
-            df = df[(df[data_col] >= data_inicio) & (df[data_col] <= data_fim)]
-        return df
+    for col in ['cidade', 'regional', 'coordenador', 'canal']:
+        if col in df_base.columns:
+            df_base[col] = df_base[col].astype(str).str.strip().str.lower()
 
-    def ler_meta(path, padroes, nome_coluna='meta', referencia=None):
-        try:
-            df = pd.read_excel(path)
-        except Exception:
-            return pd.DataFrame(columns=padroes + [nome_coluna])
-        df.columns = df.columns.str.strip().str.lower()
-        if 'data_meta' in df.columns:
-            df['data_meta'] = pd.to_datetime(df['data_meta'], dayfirst=True, errors='coerce')
-            if referencia:
-                df = df[df['data_meta'] == referencia]
-        if df.empty:
-            return pd.DataFrame(columns=padroes + [nome_coluna])
-        for col in padroes:
-            df[col] = df[col].astype(str).str.strip().str.lower()
-        df[nome_coluna] = pd.to_numeric(df.get(nome_coluna), errors='coerce').fillna(0)
-        return df
+    # Separar adesão e ativação pela coluna de datas
+    df_adesao_original = df_base.copy()
+    df_ativacao_original = df_base.copy()
+
+    df_adesao_original['data'] = pd.to_datetime(df_adesao_original['adesao'], dayfirst=True, errors='coerce')
+    df_ativacao_original['data'] = pd.to_datetime(df_ativacao_original['ativacao'], dayfirst=True, errors='coerce')
+
+    df_adesao_original = df_adesao_original[(df_adesao_original['data'] >= data_inicio) & (df_adesao_original['data'] <= data_fim)]
+    df_ativacao_original = df_ativacao_original[(df_ativacao_original['data'] >= data_inicio) & (df_ativacao_original['data'] <= data_fim)]
+
+    regionais_disponiveis = sorted(df_adesao_original['regional'].dropna().str.title().unique())
+    coordenadores_disponiveis = sorted(df_adesao_original['coordenador'].dropna().str.title().unique())
+    canais_disponiveis = sorted(df_adesao_original['canal'].dropna().str.title().unique())
 
     def aplicar_filtros(df):
         if regional:
@@ -83,18 +68,32 @@ def dashboard_diaadia(request):
             df = df[df.get('canal').isin(canais)]
         return df
 
-    df_adesao_original = ler_df(adesao_path, ['cidade', 'regional', 'coordenador', 'canal'])
-    regionais_disponiveis = sorted(df_adesao_original['regional'].dropna().str.title().unique())
-    coordenadores_disponiveis = sorted(df_adesao_original['coordenador'].dropna().str.title().unique())
-    canais_disponiveis = sorted(df_adesao_original['canal'].dropna().str.title().unique())
-
     df_adesao = aplicar_filtros(df_adesao_original)
-    df_ativacao = aplicar_filtros(ler_df(ativacao_path, ['cidade', 'regional', 'coordenador', 'canal']))
-    df_cancelamento = aplicar_filtros(ler_df(cancelamento_path, ['cidade', 'regional', 'coordenador', 'canal']))
+    df_ativacao = aplicar_filtros(df_ativacao_original)
 
-    df_metas_adesao = aplicar_filtros(ler_meta(metas_adesao_path, ['cidade', 'canal', 'regional', 'coordenador'], referencia=data_meta_ref))
-    df_metas_ativacao = aplicar_filtros(ler_meta(metas_ativacao_path, ['cidade', 'canal', 'regional', 'coordenador'], referencia=data_meta_ref))
-    df_limite = aplicar_filtros(ler_meta(limite_path, ['cidade', 'regional', 'coordenador'], 'meta', referencia=data_meta_ref))
+    df_cancelamento = aplicar_filtros(pd.read_excel(cancelamento_path))
+    df_cancelamento.columns = df_cancelamento.columns.str.strip().str.lower()
+    df_cancelamento['data'] = pd.to_datetime(df_cancelamento['data'], dayfirst=True, errors='coerce')
+    df_cancelamento = df_cancelamento[(df_cancelamento['data'] >= data_inicio) & (df_cancelamento['data'] <= data_fim)]
+
+    def ler_meta(path, padroes, nome_coluna='meta', referencia=None):
+        try:
+            df = pd.read_excel(path)
+        except Exception:
+            return pd.DataFrame(columns=padroes + [nome_coluna])
+        df.columns = df.columns.str.strip().str.lower()
+        if 'data_meta' in df.columns:
+            df['data_meta'] = pd.to_datetime(df['data_meta'], dayfirst=True, errors='coerce')
+            if referencia is not None:
+                df = df[df['data_meta'] == referencia]
+        for col in padroes:
+            df[col] = df[col].astype(str).str.strip().str.lower()
+        df[nome_coluna] = pd.to_numeric(df.get(nome_coluna), errors='coerce').fillna(0)
+        return aplicar_filtros(df)
+
+    df_metas_adesao = ler_meta(metas_adesao_path, ['cidade', 'canal', 'regional', 'coordenador'], referencia=data_meta_ref)
+    df_metas_ativacao = ler_meta(metas_ativacao_path, ['cidade', 'canal', 'regional', 'coordenador'], referencia=data_meta_ref)
+    df_limite = ler_meta(limite_path, ['cidade', 'regional', 'coordenador'], referencia=data_meta_ref)
 
     for df in [df_adesao, df_ativacao]:
         df['canal'] = df['canal'].replace('externo', 'pap')
@@ -110,13 +109,7 @@ def dashboard_diaadia(request):
     total_dias_uteis = dias_uteis_passados + dias_uteis_restantes
 
     def gerar_tabela(df_base, df_meta):
-        df_base = df_base.copy()
-        df_meta = df_meta.copy()
-
-        grupo = df_base.groupby('canal', as_index=False).agg(
-            realizado=('volume', 'sum'),
-            receita=('receita', 'sum')
-        )
+        grupo = df_base.groupby('canal', as_index=False).agg(realizado=('volume', 'sum'), receita=('receita', 'sum'))
         meta = df_meta.groupby('canal', as_index=False).agg(meta=('meta', 'sum'))
         canais = sorted(set(grupo['canal']) | set(meta['canal']))
         df_result = pd.DataFrame({'canal': canais}).merge(grupo, on='canal', how='left').merge(meta, on='canal', how='left')

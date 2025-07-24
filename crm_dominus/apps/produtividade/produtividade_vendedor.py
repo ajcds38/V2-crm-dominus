@@ -8,15 +8,16 @@ from datetime import datetime, timedelta
 @login_required(login_url='/')
 def produtividade_vendedor(request):
     base_path = os.path.join(settings.BASE_DIR, 'crm_dominus', 'apps', 'dados')
-    excel_path = os.path.join(base_path, 'adesao_produtividade.xlsx')
+    excel_path = os.path.join(base_path, 'Atualizacao_CRM.xlsx')
 
-    df_original = pd.read_excel(excel_path)
+    df_original = pd.read_excel(excel_path)  # Lê a aba padrão "Planilha 1"
     df_original.columns = df_original.columns.str.strip().str.lower()
     df_original = df_original.rename(columns={
-        'data da adesão': 'data',
-        'consultor venda': 'vendedor',
+        'adesao': 'data',
+        'vendedores': 'vendedor',
         'município/uf': 'cidade'
     })
+
     for col in ['vendedor', 'canal', 'regional', 'coordenador', 'cidade']:
         if col in df_original.columns:
             df_original[col] = df_original[col].astype(str).str.strip().str.upper()
@@ -34,7 +35,7 @@ def produtividade_vendedor(request):
     data_fim = request.GET.get('data_fim')
 
     if not data_inicio or not data_fim:
-        data_inicio = datetime(2025, 3, 25)
+        data_inicio = datetime(2025, 4, 25)
         data_fim = datetime(2025, 7, 24)
     else:
         data_inicio = pd.to_datetime(data_inicio)
@@ -105,13 +106,9 @@ def produtividade_vendedor(request):
     df_final = df_final.reset_index()
     df_final = df_final[['Vendedor'] + colunas]
 
-    # Adiciona coluna Total (com 2 casas decimais)
     df_final['Total'] = df_final[colunas].sum(axis=1).round(2)
-
-    # Ordena por Total (do maior para o menor)
     df_final = df_final.sort_values(by='Total', ascending=False)
 
-    # Linha TOTAL (média por mês - com 2 casas decimais)
     total = {}
     for mes in colunas:
         vendas_mes = df_final[mes]
@@ -123,15 +120,10 @@ def produtividade_vendedor(request):
 
     df_total = pd.DataFrame([['TOTAL'] + [total[mes] for mes in colunas] + [total['Total']]], columns=['Vendedor'] + colunas + ['Total'])
 
-    # Linha TOTAL VENDAS (valores inteiros)
-    soma_total = {}
-    for mes in colunas:
-        soma_total[mes] = int(df_final[mes].sum())
+    soma_total = {mes: int(df_final[mes].sum()) for mes in colunas}
     soma_total['Total'] = int(df_final['Total'].sum())
-
     df_soma = pd.DataFrame([['TOTAL VENDAS'] + [soma_total[mes] for mes in colunas] + [soma_total['Total']]], columns=['Vendedor'] + colunas + ['Total'])
 
-    # Junta tudo
     df_final = pd.concat([df_final, df_total, df_soma], ignore_index=True)
 
     context = {

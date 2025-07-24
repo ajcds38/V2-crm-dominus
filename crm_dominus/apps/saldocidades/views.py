@@ -9,7 +9,7 @@ from django.conf import settings
 @login_required(login_url='/')
 def saldo_cidades(request):
     base_path = os.path.join(settings.BASE_DIR, 'crm_dominus', 'apps', 'dados')
-    ativ_path = os.path.join(base_path, 'ativacao_realizado.xlsx')
+    ativ_path = os.path.join(base_path, 'Atualizacao_CRM.xlsx')
     cancel_path = os.path.join(base_path, 'cancelamento_realizado.xlsx')
 
     hoje = datetime.today()
@@ -24,19 +24,31 @@ def saldo_cidades(request):
     coordenador = request.GET.get('coordenador', '').strip().upper()
     canais = [c.strip().upper() for c in request.GET.getlist('canal') if c.strip()]
 
-    df_ativ = pd.read_excel(ativ_path)
+    # Leitura do arquivo de ativação
+    df_ativ = pd.read_excel(ativ_path, sheet_name='Planilha1')
+    df_ativ.columns = df_ativ.columns.str.strip().str.lower()
+    df_ativ = df_ativ.rename(columns={'ativacao': 'data'})
+
+    for col in ['cidade', 'regional', 'coordenador', 'canal']:
+        if col in df_ativ.columns:
+            df_ativ[col] = df_ativ[col].astype(str).str.strip().str.upper().str.replace('\xa0', ' ')
+    df_ativ = df_ativ[~df_ativ['data'].isin(['-', None, '', pd.NaT])]
+    df_ativ['data'] = pd.to_datetime(df_ativ['data'], dayfirst=True, errors='coerce')
+    df_ativ = df_ativ.dropna(subset=['data'])
+    df_ativ['volume'] = 1  # Cada ativação conta como 1
+    df_ativ['canal'] = 'INTERNO'  # força todos como INTERNO
+
+    # Leitura do cancelamento
     df_cancel = pd.read_excel(cancel_path)
+    df_cancel.columns = df_cancel.columns.str.strip().str.lower()
+    for col in ['cidade', 'regional', 'coordenador', 'canal']:
+        if col in df_cancel.columns:
+            df_cancel[col] = df_cancel[col].astype(str).str.strip().str.upper().str.replace('\xa0', ' ')
+    df_cancel['data'] = pd.to_datetime(df_cancel['data'], dayfirst=True, errors='coerce')
+    df_cancel['volume'] = pd.to_numeric(df_cancel['volume'], errors='coerce').fillna(0)
+    df_cancel['canal'] = 'INTERNO'
 
-    for df in [df_ativ, df_cancel]:
-        df.columns = df.columns.str.strip().str.lower()
-        for col in ['cidade', 'regional', 'coordenador', 'canal']:
-            if col in df.columns:
-                df[col] = df[col].astype(str).str.strip().str.upper().str.replace('\xa0', ' ')
-        df['data'] = pd.to_datetime(df['data'], dayfirst=True, errors='coerce')
-        df['volume'] = pd.to_numeric(df['volume'], errors='coerce').fillna(0)
-        df['canal'] = 'INTERNO'  # 🔒 força todos como INTERNO
-
-    # Geração de opções de filtro
+    # Filtros disponíveis
     df_filtros = pd.concat([
         df_ativ[['regional', 'coordenador']],
         df_cancel[['regional', 'coordenador']]
@@ -47,7 +59,7 @@ def saldo_cidades(request):
         'canal': ['INTERNO']
     }
 
-    # Aplicação dos filtros de data e parâmetros
+    # Filtros de data e parâmetros
     df_ativ = df_ativ[(df_ativ['data'] >= data_inicio) & (df_ativ['data'] <= data_fim)]
     df_cancel = df_cancel[(df_cancel['data'] >= data_inicio) & (df_cancel['data'] <= data_fim)]
 

@@ -5,10 +5,11 @@ import pandas as pd
 import os
 from diasuteis.models import DiasUteis
 from django.conf import settings
+from functools import lru_cache  # ✅ Importação adicionada
 
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-CAMINHO_REALIZADO = os.path.join(BASE_DIR, '..', 'dados', 'ativacao_realizado.xlsx')
-CAMINHO_METAS = os.path.join(BASE_DIR, '..', 'dados', 'metas_ativacao.xlsx')
+# Caminhos dos arquivos
+CAMINHO_REALIZADO = os.path.join(settings.BASE_DIR, 'crm_dominus', 'apps', 'dados', 'Atualizacao_CRM.xlsx')
+CAMINHO_METAS = os.path.join(settings.BASE_DIR, 'crm_dominus', 'apps', 'dados', 'metas_ativacao.xlsx')
 
 @login_required
 def ativacao(request):
@@ -26,49 +27,50 @@ def ativacao(request):
     coordenadores = [c.strip().upper() for c in request.GET.getlist('coordenador') if c.strip()]
     canais = [c.strip().upper() for c in request.GET.getlist('canal') if c.strip()]
 
+    # Leitura das bases
     df_real = pd.read_excel(CAMINHO_REALIZADO)
-    df_metas = pd.read_excel(CAMINHO_METAS)
+    df_meta = pd.read_excel(CAMINHO_METAS)
     df_real.columns = df_real.columns.str.strip().str.lower()
-    df_metas.columns = df_metas.columns.str.strip().str.lower()
+    df_meta.columns = df_meta.columns.str.strip().str.lower()
 
-    for col in ['cidade', 'canal', 'regional', 'coordenador']:
+    for col in ['cidade', 'canal', 'regional', 'coordenador', 'vendedores']:
         if col in df_real.columns:
             df_real[col] = df_real[col].astype(str).str.strip().str.upper()
-        if col in df_metas.columns:
-            df_metas[col] = df_metas[col].astype(str).str.strip().str.upper()
+        if col in df_meta.columns:
+            df_meta[col] = df_meta[col].astype(str).str.strip().str.upper()
 
-    canal_padrao = {'EXTERNO': 'PAP', 'PAP': 'PAP'}
-    df_real['canal'] = df_real['canal'].map(canal_padrao).fillna(df_real['canal'])
-    df_metas['canal'] = df_metas['canal'].map(canal_padrao).fillna(df_metas['canal'])
+    df_real['canal'] = df_real['canal'].replace({'EXTERNO': 'PAP'})
+    df_meta['canal'] = df_meta['canal'].replace({'EXTERNO': 'PAP'})
 
-    df_real['data'] = pd.to_datetime(df_real['data'], dayfirst=True, errors='coerce')
-    df_real = df_real[(df_real['data'] >= data_inicio) & (df_real['data'] <= data_fim)]
+    df_real['ativacao'] = pd.to_datetime(df_real['ativacao'], errors='coerce')
+    df_real = df_real[df_real['ativacao'].notna()]
+    df_real = df_real[(df_real['ativacao'] >= data_inicio) & (df_real['ativacao'] <= data_fim)]
 
-    if 'data_meta' in df_metas.columns:
-        df_metas['data_meta'] = pd.to_datetime(df_metas['data_meta'], dayfirst=True, errors='coerce')
-        df_metas = df_metas[df_metas['data_meta'] == data_meta_referencia]
+    if 'data_meta' in df_meta.columns:
+        df_meta['data_meta'] = pd.to_datetime(df_meta['data_meta'], errors='coerce')
+        df_meta = df_meta[df_meta['data_meta'] == data_meta_referencia]
 
-    if df_metas.empty:
-        df_metas = pd.DataFrame(columns=['cidade', 'canal', 'regional', 'coordenador', 'meta'])
+    if df_meta.empty:
+        df_meta = pd.DataFrame(columns=['cidade', 'canal', 'regional', 'coordenador', 'meta'])
 
     if regionais:
         df_real = df_real[df_real['regional'].isin(regionais)]
-        df_metas = df_metas[df_metas['regional'].isin(regionais)]
+        df_meta = df_meta[df_meta['regional'].isin(regionais)]
     if coordenadores:
         df_real = df_real[df_real['coordenador'].isin(coordenadores)]
-        df_metas = df_metas[df_metas['coordenador'].isin(coordenadores)]
+        df_meta = df_meta[df_meta['coordenador'].isin(coordenadores)]
     if canais:
         df_real = df_real[df_real['canal'].isin(canais)]
-        df_metas = df_metas[df_metas['canal'].isin(canais)]
+        df_meta = df_meta[df_meta['canal'].isin(canais)]
 
     colunas_chave = ['cidade', 'canal', 'regional', 'coordenador']
     df_agg = df_real.groupby(colunas_chave).agg({
-        'volume': 'count',
         'receita': 'sum',
         'vendedores': 'nunique'
     }).reset_index()
+    df_agg['volume'] = df_real.groupby(colunas_chave).size().values
 
-    df_group = pd.merge(df_metas, df_agg, how='left', on=colunas_chave)
+    df_group = pd.merge(df_meta, df_agg, how='left', on=colunas_chave)
 
     for col in ['meta', 'volume', 'receita', 'vendedores']:
         df_group[col] = df_group.get(col, 0).fillna(0)
@@ -84,10 +86,12 @@ def ativacao(request):
     df_group['produtividade'] = df_group['volume'] / df_group['vendedores'].replace({0: 1})
     media_produtividade = df_group['produtividade'].mean() if not df_group.empty else 0
     df_group['alerta_produtividade'] = df_group['produtividade'] < media_produtividade
+
     df_group['alerta_projecao'] = ''
     df_group.loc[df_group['proj_percentual'] < 80, 'alerta_projecao'] = 'vermelho'
     df_group.loc[(df_group['proj_percentual'] >= 80) & (df_group['proj_percentual'] < 100), 'alerta_projecao'] = 'amarelo'
 
+    # Filtros para dropdowns
     df_filtros_real = pd.read_excel(CAMINHO_REALIZADO)
     df_filtros_meta = pd.read_excel(CAMINHO_METAS)
     df_filtros_real.columns = df_filtros_real.columns.str.strip().str.lower()
@@ -99,8 +103,8 @@ def ativacao(request):
         if col in df_filtros_meta.columns:
             df_filtros_meta[col] = df_filtros_meta[col].astype(str).str.strip().str.upper()
 
-    df_filtros_real['canal'] = df_filtros_real['canal'].map(canal_padrao).fillna(df_filtros_real['canal'])
-    df_filtros_meta['canal'] = df_filtros_meta['canal'].map(canal_padrao).fillna(df_filtros_meta['canal'])
+    df_filtros_real['canal'] = df_filtros_real['canal'].replace({'EXTERNO': 'PAP'})
+    df_filtros_meta['canal'] = df_filtros_meta['canal'].replace({'EXTERNO': 'PAP'})
 
     df_filtros = pd.concat([df_filtros_real, df_filtros_meta], ignore_index=True)
     filtros = {col: sorted(df_filtros[col].dropna().unique()) for col in ['regional', 'coordenador', 'canal'] if col in df_filtros}
@@ -125,12 +129,17 @@ def ativacao(request):
 
     return render(request, 'ativacao/index.html', context)
 
+from functools import lru_cache  # ✅ Garante que está no topo
+
+# ✅ Caminho para a base consolidada
+CAMINHO_CONSOLIDADO = os.path.join(settings.BASE_DIR, 'crm_dominus', 'apps', 'dados', 'Atualizacao_CRM.xlsx')
+
+@lru_cache()
+def get_df_unificado():
+    return pd.read_excel(CAMINHO_CONSOLIDADO, engine="openpyxl")
 
 @login_required(login_url='/')
 def ativacao_vendedor(request):
-    BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-    CAMINHO_ATIVACAO = os.path.join(BASE_DIR, '..', 'dados', 'ativacao_realizado.xlsx')
-
     hoje = datetime.today()
     primeiro_dia_mes = datetime(hoje.year, hoje.month, 1)
     data_inicio_padrao = (primeiro_dia_mes - timedelta(days=7)).replace(day=25)
@@ -144,32 +153,33 @@ def ativacao_vendedor(request):
     coordenadores = [c.strip().upper() for c in request.GET.getlist('coordenador') if c.strip()]
     canais = [c.strip().upper() for c in request.GET.getlist('canal') if c.strip()]
 
-    df_real = pd.read_excel(CAMINHO_ATIVACAO)
-    df_real.columns = df_real.columns.str.strip().str.lower()
+    df = get_df_unificado()
+    df.columns = df.columns.str.strip().str.lower()
 
     for col in ['regional', 'coordenador', 'canal', 'vendedores']:
-        df_real[col] = df_real[col].astype(str).str.strip().str.upper()
+        if col in df.columns:
+            df[col] = df[col].astype(str).str.strip().str.upper()
 
-    canal_padrao = {'EXTERNO': 'PAP', 'PAP': 'PAP'}
-    df_real['canal'] = df_real['canal'].map(canal_padrao).fillna(df_real['canal'])
-    df_real['data'] = pd.to_datetime(df_real['data'], dayfirst=True, errors='coerce')
-    df_real = df_real[(df_real['data'] >= data_inicio) & (df_real['data'] <= data_fim)]
+    df['canal'] = df['canal'].replace({'EXTERNO': 'PAP'})
+    df['ativacao'] = pd.to_datetime(df['ativacao'], errors='coerce')
+    df = df[df['ativacao'].notna()]
+    df = df[(df['ativacao'] >= data_inicio) & (df['ativacao'] <= data_fim)]
 
     if regionais:
-        df_real = df_real[df_real['regional'].isin(regionais)]
+        df = df[df['regional'].isin(regionais)]
     if coordenadores:
-        df_real = df_real[df_real['coordenador'].isin(coordenadores)]
+        df = df[df['coordenador'].isin(coordenadores)]
     if canais:
-        df_real = df_real[df_real['canal'].isin(canais)]
+        df = df[df['canal'].isin(canais)]
 
     colunas_chave = ['vendedores', 'canal']
-    df_agg = df_real.groupby(colunas_chave).agg({
+    df_agg = df.groupby(colunas_chave).agg({
         'receita': 'sum',
         'regional': 'first',
         'coordenador': 'first'
     }).reset_index()
-    df_agg['volume'] = df_real.groupby(colunas_chave).size().values
-    df_agg['meta'] = 22
+    df_agg['volume'] = df.groupby(colunas_chave).size().values
+    df_agg['meta'] = 22  # ✅ Meta fixa por vendedor
 
     dias_uteis = DiasUteis.objects.last()
     dias_passados = dias_uteis.dias_uteis_passados if dias_uteis else 1
@@ -182,12 +192,17 @@ def ativacao_vendedor(request):
     df_agg['produtividade'] = df_agg['volume']
     media_produtividade = df_agg['produtividade'].mean() if not df_agg.empty else 0
     df_agg['alerta_produtividade'] = df_agg['produtividade'] < media_produtividade
+
+    df_agg['alerta_projecao'] = ''
+    df_agg.loc[df_agg['proj_percentual'] < 80, 'alerta_projecao'] = 'vermelho'
+    df_agg.loc[(df_agg['proj_percentual'] >= 80) & (df_agg['proj_percentual'] < 100), 'alerta_projecao'] = 'amarelo'
+
     df_agg = df_agg.sort_values(by='projecao', ascending=False)
 
     filtros = {
-        'regional': sorted(df_real['regional'].dropna().unique()),
-        'coordenador': sorted(df_real['coordenador'].dropna().unique()),
-        'canal': sorted(df_real['canal'].dropna().unique()),
+        'regional': sorted(df['regional'].dropna().unique()),
+        'coordenador': sorted(df['coordenador'].dropna().unique()),
+        'canal': sorted(df['canal'].dropna().unique()),
     }
 
     context = {
