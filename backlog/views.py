@@ -17,10 +17,9 @@ def backlog_instalacoes(request):
         'adesao': 'adesao',
         'ativacao': 'ativacao',
         'cidade': 'cidade',
-        'vendedores': 'vendedor'  # <- CORREÇÃO AQUI
+        'vendedores': 'vendedor'
     })
 
-    # Padronização
     for col in ['cliente', 'cidade', 'vendedor', 'canal', 'regional', 'coordenador']:
         if col in df.columns:
             df[col] = df[col].astype(str).str.strip().str.upper().str.replace('\xa0', ' ')
@@ -29,8 +28,8 @@ def backlog_instalacoes(request):
     df['ativacao'] = pd.to_datetime(df['ativacao'], dayfirst=True, errors='coerce')
 
     # Filtros GET
-    data_inicio = request.GET.get('data_inicio')
-    data_fim = request.GET.get('data_fim')
+    data_inicio = request.GET.get('data_inicio') or '2025-06-25'
+    data_fim = request.GET.get('data_fim') or '2025-07-24'
     regionais = request.GET.getlist('regional')
     coordenadores = request.GET.getlist('coordenador')
     canais = request.GET.getlist('canal')
@@ -43,10 +42,10 @@ def backlog_instalacoes(request):
             return df[df[coluna].isin(valores_filtrados)]
         return df
 
-    if data_inicio and data_fim:
-        data_inicio = pd.to_datetime(data_inicio)
-        data_fim = pd.to_datetime(data_fim)
-        df = df[(df['ativacao'] >= data_inicio) & (df['ativacao'] <= data_fim)]
+    # Filtro por ativação no intervalo padrão ou customizado
+    data_inicio = pd.to_datetime(data_inicio)
+    data_fim = pd.to_datetime(data_fim)
+    df = df[(df['ativacao'].isna()) | ((df['ativacao'] >= data_inicio) & (df['ativacao'] <= data_fim))]
 
     df = aplicar_filtro(df, 'regional', regionais)
     df = aplicar_filtro(df, 'coordenador', coordenadores)
@@ -54,21 +53,27 @@ def backlog_instalacoes(request):
     df = aplicar_filtro(df, 'cidade', cidades)
     df = aplicar_filtro(df, 'vendedor', vendedores)
 
-    # Resultado
+    # Resultado final
     df_resultado = df[['cliente', 'adesao', 'ativacao']].drop_duplicates(subset='cliente')
-    df_resultado['adesao'] = df_resultado['adesao'].dt.strftime('%d/%m/%Y').fillna('')
-    df_resultado['ativacao'] = df_resultado['ativacao'].apply(
+
+    # Colunas formatadas
+    df_resultado['adesao_str'] = df_resultado['adesao'].dt.strftime('%d/%m/%Y').fillna('')
+    df_resultado['ativacao_str'] = df_resultado['ativacao'].apply(
         lambda x: x.strftime('%d/%m/%Y') if pd.notnull(x)
         else '<span style="color: white; background-color: red; padding: 2px 6px; border-radius: 4px;">❌</span>'
     )
 
-    resultado = df_resultado.rename(columns={'cliente': 'nome'}).to_dict(orient='records')
+    # Ordenar: sem ativação primeiro, depois ativados do mais antigo ao mais recente
+    df_resultado['ordenar'] = df_resultado['ativacao'].fillna(pd.Timestamp.min)
+    df_resultado = df_resultado.sort_values(by='ordenar').drop(columns='ordenar')
+
+    resultado = df_resultado.rename(columns={'cliente': 'nome', 'adesao_str': 'adesao', 'ativacao_str': 'ativacao'})[['nome', 'adesao', 'ativacao']].to_dict(orient='records')
 
     context = {
         'clientes': resultado,
         'filtros': {
-            'data_inicio': request.GET.get('data_inicio', ''),
-            'data_fim': request.GET.get('data_fim', ''),
+            'data_inicio': request.GET.get('data_inicio', '2025-06-25'),
+            'data_fim': request.GET.get('data_fim', '2025-07-24'),
             'regional': regionais,
             'coordenador': coordenadores,
             'canal': canais,
