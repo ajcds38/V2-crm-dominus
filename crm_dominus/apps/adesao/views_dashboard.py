@@ -37,7 +37,6 @@ def dashboard_diaadia(request):
     intervalo_passado = data_fim.date() < hoje.date()
     data_meta_ref = data_inicio.replace(day=25)
 
-    # Leitura da única aba (Planilha 1)
     df_base = pd.read_excel(caminho_arquivo_unificado)
     df_base.columns = df_base.columns.str.strip().str.lower()
 
@@ -45,7 +44,6 @@ def dashboard_diaadia(request):
         if col in df_base.columns:
             df_base[col] = df_base[col].astype(str).str.strip().str.lower()
 
-    # Separar adesão e ativação pela coluna de datas
     df_adesao_original = df_base.copy()
     df_ativacao_original = df_base.copy()
 
@@ -140,14 +138,15 @@ def dashboard_diaadia(request):
     tabela_canal_adesao = gerar_tabela(df_adesao, df_metas_adesao)
     tabela_canal_ativacao = gerar_tabela(df_ativacao, df_metas_ativacao)
 
-    cancelamento = df_cancelamento.groupby('cidade', as_index=False).agg(cancelamento_proj=('volume', 'sum'))
-    cancelamento['cidade'] = cancelamento['cidade'].str.lower().str.strip()
-    df_limite['cidade'] = df_limite['cidade'].str.lower().str.strip()
-    cancelamento = cancelamento.merge(df_limite[['cidade', 'meta']], on='cidade', how='left').fillna(0)
-    cancelamento['projecao_percentual'] = (cancelamento['cancelamento_proj'] / cancelamento['meta'].replace(0, 1)) * 100
-    cancelamento = cancelamento.rename(columns={'meta': 'limite_cancelamento'})
-    cancelamento['cidade'] = cancelamento['cidade'].str.title()
-    painel_risco = cancelamento.sort_values(by='projecao_percentual', ascending=False).head(10).round(1).to_dict(orient='records')
+    # ✅ Painel de risco desativado temporariamente
+    # cancelamento = df_cancelamento.groupby('cidade', as_index=False).agg(cancelamento_proj=('volume', 'sum'))
+    # cancelamento['cidade'] = cancelamento['cidade'].str.lower().str.strip()
+    # df_limite['cidade'] = df_limite['cidade'].str.lower().str.strip()
+    # cancelamento = cancelamento.merge(df_limite[['cidade', 'meta']], on='cidade', how='left').fillna(0)
+    # cancelamento['projecao_percentual'] = (cancelamento['cancelamento_proj'] / cancelamento['meta'].replace(0, 1)) * 100
+    # cancelamento = cancelamento.rename(columns={'meta': 'limite_cancelamento'})
+    # cancelamento['cidade'] = cancelamento['cidade'].str.title()
+    # painel_risco = cancelamento.sort_values(by='projecao_percentual', ascending=False).head(10).round(1).to_dict(orient='records')
 
     colunas_dias = pd.date_range(start=data_inicio, end=data_fim).strftime('%d/%m').tolist()
     df_tabela = pd.DataFrame(columns=colunas_dias)
@@ -173,7 +172,7 @@ def dashboard_diaadia(request):
         'coordenadores_selecionadas': [coordenador] if coordenador else [],
         'tabela_canal': tabela_canal_adesao,
         'tabela_canal_ativacao': tabela_canal_ativacao,
-        'painel_risco': painel_risco,
+        # 'painel_risco': painel_risco,  # ❌ Removido temporariamente do contexto
     }
 
     return render(request, 'dashboard/diaadia.html', context)
