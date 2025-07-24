@@ -27,7 +27,14 @@ def backlog_instalacoes(request):
     df['adesao'] = pd.to_datetime(df['adesao'], dayfirst=True, errors='coerce')
     df['ativacao'] = pd.to_datetime(df['ativacao'], dayfirst=True, errors='coerce')
 
-    # Filtros
+    # Listas únicas para filtros (antes de aplicar filtros para manter todas as opções)
+    lista_regionais = sorted(df['regional'].dropna().unique())
+    lista_coordenadores = sorted(df['coordenador'].dropna().unique())
+    lista_canais = sorted(df['canal'].dropna().unique())
+    lista_cidades = sorted(df['cidade'].dropna().unique())
+    lista_vendedores = sorted(df['vendedores'].dropna().unique())
+
+    # Filtros GET
     data_inicio = pd.to_datetime(request.GET.get('data_inicio') or '2025-06-25')
     data_fim = pd.to_datetime(request.GET.get('data_fim') or '2025-07-24')
     regionais = request.GET.getlist('regional')
@@ -48,7 +55,7 @@ def backlog_instalacoes(request):
     df = aplicar_filtro(df, 'cidade', cidades)
     df = aplicar_filtro(df, 'vendedores', vendedores)
 
-    # Filtro de datas
+    # Apenas registros com ativação nula OU com ativação dentro do período
     df_filtro = pd.concat([
         df[df['ativacao'].isna() & df['adesao'].between(data_inicio, data_fim)],
         df[df['ativacao'].notna() & df['ativacao'].between(data_inicio, data_fim)]
@@ -75,11 +82,11 @@ def backlog_instalacoes(request):
             'canal': canais,
             'cidade': cidades,
             'vendedor': vendedores,
-            'lista_regionais': sorted(df['regional'].dropna().unique()),
-            'lista_coordenadores': sorted(df['coordenador'].dropna().unique()),
-            'lista_canais': sorted(df['canal'].dropna().unique()),
-            'lista_cidades': sorted(df['cidade'].dropna().unique()),
-            'lista_vendedores': sorted(df['vendedores'].dropna().unique()),
+            'lista_regionais': lista_regionais,
+            'lista_coordenadores': lista_coordenadores,
+            'lista_canais': lista_canais,
+            'lista_cidades': lista_cidades,
+            'lista_vendedores': lista_vendedores,
         }
     }
 
