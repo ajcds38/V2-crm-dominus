@@ -13,11 +13,11 @@ def backlog_instalacoes(request):
     df.columns = df.columns.str.strip().str.lower()
 
     df = df.rename(columns={
-        'nome do cliente': 'cliente',
+        'cliente': 'cliente',
         'adesao': 'adesao',
         'ativacao': 'ativacao',
-        'município/uf': 'cidade',
-        'consultor venda': 'vendedor'
+        'cidade': 'cidade',
+        'vendedores': 'vendedor'  # <- CORREÇÃO AQUI
     })
 
     # Padronização
@@ -39,7 +39,7 @@ def backlog_instalacoes(request):
 
     def aplicar_filtro(df, coluna, valores):
         valores_filtrados = [v.upper() for v in valores if v.strip().upper() not in ['', 'TODOS', 'TODAS']]
-        if valores_filtrados:
+        if valores_filtrados and coluna in df.columns:
             return df[df[coluna].isin(valores_filtrados)]
         return df
 
@@ -54,21 +54,15 @@ def backlog_instalacoes(request):
     df = aplicar_filtro(df, 'cidade', cidades)
     df = aplicar_filtro(df, 'vendedor', vendedores)
 
-    # Resultado otimizado por cliente
+    # Resultado
     df_resultado = df[['cliente', 'adesao', 'ativacao']].drop_duplicates(subset='cliente')
     df_resultado['adesao'] = df_resultado['adesao'].dt.strftime('%d/%m/%Y').fillna('')
     df_resultado['ativacao'] = df_resultado['ativacao'].apply(
-        lambda x: x.strftime('%d/%m/%Y') if pd.notnull(x) else '<span style="color: white; background-color: red; padding: 2px 6px; border-radius: 4px;">❌</span>'
+        lambda x: x.strftime('%d/%m/%Y') if pd.notnull(x)
+        else '<span style="color: white; background-color: red; padding: 2px 6px; border-radius: 4px;">❌</span>'
     )
 
     resultado = df_resultado.rename(columns={'cliente': 'nome'}).to_dict(orient='records')
-
-    # Listas únicas para filtros
-    lista_regionais = sorted(df['regional'].dropna().unique())
-    lista_coordenadores = sorted(df['coordenador'].dropna().unique())
-    lista_canais = sorted(df['canal'].dropna().unique())
-    lista_cidades = sorted(df['cidade'].dropna().unique())
-    lista_vendedores = sorted(df['vendedor'].dropna().unique())
 
     context = {
         'clientes': resultado,
@@ -80,11 +74,11 @@ def backlog_instalacoes(request):
             'canal': canais,
             'cidade': cidades,
             'vendedor': vendedores,
-            'lista_regionais': lista_regionais,
-            'lista_coordenadores': lista_coordenadores,
-            'lista_canais': lista_canais,
-            'lista_cidades': lista_cidades,
-            'lista_vendedores': lista_vendedores,
+            'lista_regionais': sorted(df['regional'].dropna().unique()) if 'regional' in df.columns else [],
+            'lista_coordenadores': sorted(df['coordenador'].dropna().unique()) if 'coordenador' in df.columns else [],
+            'lista_canais': sorted(df['canal'].dropna().unique()) if 'canal' in df.columns else [],
+            'lista_cidades': sorted(df['cidade'].dropna().unique()) if 'cidade' in df.columns else [],
+            'lista_vendedores': sorted(df['vendedor'].dropna().unique()) if 'vendedor' in df.columns else [],
         }
     }
 
