@@ -17,18 +17,16 @@ def backlog_instalacoes(request):
         'adesao': 'adesao',
         'ativacao': 'ativacao',
         'município/uf': 'cidade',
-        'consultor venda': 'vendedor'
+        'consultor venda': 'vendedores'
     })
 
-    # Padronização
-    for col in ['cliente', 'cidade', 'vendedor', 'canal', 'regional', 'coordenador']:
+    for col in ['cliente', 'cidade', 'vendedores', 'canal', 'regional', 'coordenador']:
         if col in df.columns:
             df[col] = df[col].astype(str).str.strip().str.upper().str.replace('\xa0', ' ')
 
     df['adesao'] = pd.to_datetime(df['adesao'], dayfirst=True, errors='coerce')
     df['ativacao'] = pd.to_datetime(df['ativacao'], dayfirst=True, errors='coerce')
 
-    # Filtros GET
     data_inicio = pd.to_datetime(request.GET.get('data_inicio') or '2025-06-25')
     data_fim = pd.to_datetime(request.GET.get('data_fim') or '2025-07-24')
     regionais = request.GET.getlist('regional')
@@ -47,19 +45,17 @@ def backlog_instalacoes(request):
     df = aplicar_filtro(df, 'coordenador', coordenadores)
     df = aplicar_filtro(df, 'canal', canais)
     df = aplicar_filtro(df, 'cidade', cidades)
-    df = aplicar_filtro(df, 'vendedor', vendedores)
+    df = aplicar_filtro(df, 'vendedores', vendedores)
 
-    # Filtro combinado por tipo de status
+    # Apenas registros com ativação nula OU com ativação dentro do período
     df_filtro = pd.concat([
         df[df['ativacao'].isna() & df['adesao'].between(data_inicio, data_fim)],
         df[df['ativacao'].notna() & df['ativacao'].between(data_inicio, data_fim)]
     ])
 
-    # Ordenar: primeiro ❌, depois datas mais antigas
     df_filtro['ordem_ativacao'] = df_filtro['ativacao'].isna().astype(int)
     df_filtro = df_filtro.sort_values(by=['ordem_ativacao', 'ativacao', 'adesao'])
 
-    # Resultado final por cliente
     df_resultado = df_filtro[['cliente', 'adesao', 'ativacao']].drop_duplicates(subset='cliente')
     df_resultado['adesao'] = df_resultado['adesao'].dt.strftime('%d/%m/%Y').fillna('')
     df_resultado['ativacao'] = df_resultado['ativacao'].apply(
@@ -68,12 +64,11 @@ def backlog_instalacoes(request):
 
     resultado = df_resultado.rename(columns={'cliente': 'nome'}).to_dict(orient='records')
 
-    # Listas únicas para filtros
     lista_regionais = sorted(df['regional'].dropna().unique())
     lista_coordenadores = sorted(df['coordenador'].dropna().unique())
     lista_canais = sorted(df['canal'].dropna().unique())
     lista_cidades = sorted(df['cidade'].dropna().unique())
-    lista_vendedores = sorted(df['vendedor'].dropna().unique())
+    lista_vendedores = sorted(df['vendedores'].dropna().unique())
 
     context = {
         'clientes': resultado,
