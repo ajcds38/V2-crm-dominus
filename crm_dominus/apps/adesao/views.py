@@ -143,9 +143,9 @@ def adesao_vendedor(request):
     data_inicio = pd.to_datetime(request.GET.get('inicio', data_inicio_padrao.strftime('%Y-%m-%d')))
     data_fim = pd.to_datetime(request.GET.get('fim', data_fim_padrao.strftime('%Y-%m-%d')))
 
-    regionais = [r.strip().upper() for r in request.GET.getlist('regional') if r.strip()]
-    coordenadores = [c.strip().upper() for c in request.GET.getlist('coordenador') if c.strip()]
-    canais = [c.strip().upper() for c in request.GET.getlist('canal') if c.strip()]
+    regionais_sel = [r.strip().upper() for r in request.GET.getlist('regional') if r.strip()]
+    coordenadores_sel = [c.strip().upper() for c in request.GET.getlist('coordenador') if c.strip()]
+    canais_sel = [c.strip().upper() for c in request.GET.getlist('canal') if c.strip()]
 
     df = get_df_unificado()
     df.columns = df.columns.str.strip().str.lower()
@@ -160,18 +160,18 @@ def adesao_vendedor(request):
     df = df[df['adesao'].notna()]
     df = df[(df['adesao'] >= data_inicio) & (df['adesao'] <= data_fim)]
 
-    if regionais:
-        df = df[df['regional'].isin(regionais)]
-    if coordenadores:
-        df = df[df['coordenador'].isin(coordenadores)]
-    if canais:
-        df = df[df['canal'].isin(canais)]
+    # ⬇️ Salva listas completas antes dos filtros
+    lista_regionais = sorted(df['regional'].dropna().unique())
+    lista_coordenadores = sorted(df['coordenador'].dropna().unique())
+    lista_canais = sorted(df['canal'].dropna().unique())
 
-    filtros = {
-        'regional': sorted(df['regional'].dropna().unique()),
-        'coordenador': sorted(df['coordenador'].dropna().unique()),
-        'canal': sorted(df['canal'].dropna().unique()),
-    }
+    # ⬇️ Aplica filtros após capturar as listas completas
+    if regionais_sel:
+        df = df[df['regional'].isin(regionais_sel)]
+    if coordenadores_sel:
+        df = df[df['coordenador'].isin(coordenadores_sel)]
+    if canais_sel:
+        df = df[df['canal'].isin(canais_sel)]
 
     colunas_chave = ['vendedores', 'canal']
     df_agg = df.groupby(colunas_chave).agg({
@@ -210,9 +210,9 @@ def adesao_vendedor(request):
         'total_produtividade': f"{(df_agg['volume'].sum() / len(df_agg)):.2f}" if len(df_agg) > 0 else "0.00",
         'data_inicio': data_inicio.strftime('%Y-%m-%d'),
         'data_fim': data_fim.strftime('%Y-%m-%d'),
-        'regionais': filtros['regional'],
-        'coordenadores': filtros['coordenador'],
-        'canais': filtros['canal'],
+        'regionais': lista_regionais,
+        'coordenadores': lista_coordenadores,
+        'canais': lista_canais,
         'regionais_selecionadas': request.GET.getlist('regional'),
         'coordenadores_selecionadas': request.GET.getlist('coordenador'),
         'canais_selecionadas': request.GET.getlist('canal'),
