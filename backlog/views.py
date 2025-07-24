@@ -42,7 +42,7 @@ def backlog_instalacoes(request):
             return df[df[coluna].isin(valores_filtrados)]
         return df
 
-    # Filtro por ativação no intervalo padrão ou customizado
+    # Filtro principal baseado na coluna de ativação (❌ ou dentro do intervalo)
     data_inicio = pd.to_datetime(data_inicio)
     data_fim = pd.to_datetime(data_fim)
     df = df[(df['ativacao'].isna()) | ((df['ativacao'] >= data_inicio) & (df['ativacao'] <= data_fim))]
@@ -53,21 +53,23 @@ def backlog_instalacoes(request):
     df = aplicar_filtro(df, 'cidade', cidades)
     df = aplicar_filtro(df, 'vendedor', vendedores)
 
-    # Resultado final
+    # Tabela por cliente (adesão e ativação dentro do filtro de ativação)
     df_resultado = df[['cliente', 'adesao', 'ativacao']].drop_duplicates(subset='cliente')
 
-    # Colunas formatadas
     df_resultado['adesao_str'] = df_resultado['adesao'].dt.strftime('%d/%m/%Y').fillna('')
     df_resultado['ativacao_str'] = df_resultado['ativacao'].apply(
         lambda x: x.strftime('%d/%m/%Y') if pd.notnull(x)
         else '<span style="color: white; background-color: red; padding: 2px 6px; border-radius: 4px;">❌</span>'
     )
 
-    # Ordenar: sem ativação primeiro, depois ativados do mais antigo ao mais recente
     df_resultado['ordenar'] = df_resultado['ativacao'].fillna(pd.Timestamp.min)
     df_resultado = df_resultado.sort_values(by='ordenar').drop(columns='ordenar')
 
-    resultado = df_resultado.rename(columns={'cliente': 'nome', 'adesao_str': 'adesao', 'ativacao_str': 'ativacao'})[['nome', 'adesao', 'ativacao']].to_dict(orient='records')
+    resultado = df_resultado.rename(columns={
+        'cliente': 'nome',
+        'adesao_str': 'adesao',
+        'ativacao_str': 'ativacao'
+    })[['nome', 'adesao', 'ativacao']].to_dict(orient='records')
 
     context = {
         'clientes': resultado,
