@@ -174,37 +174,6 @@
     </div>
 </div>
 
-<br>
-<h2 class="titulo-pagina">🚨 Painel de Risco - Cancelamento - As 10 cidades ofensoras - DESATIVADO TEMPORARIAMENTE</h2>
-<table>
-    <thead>
-        <tr style="background-color: #b8923a; color: black;">
-            <th>Cidade</th>
-            <th>Limite</th>
-            <th>Projeção Cancelamento</th>
-            <th>Projeção %</th>
-        </tr>
-    </thead>
-    <tbody>
-        {% for linha in painel_risco %}
-        <tr>
-            <td><strong>{{ linha.cidade|title }}</strong></td>
-            <td>{{ linha.limite_cancelamento|default:0|floatformat:0 }}</td>
-            <td>{{ linha.cancelamento_proj|default:0|floatformat:0 }}</td>
-            <td>
-                {% if linha.projecao_percentual|default:0 > 120 %}
-                    <span style="color: red; font-weight: bold;">🔴 {{ linha.projecao_percentual|default:0|floatformat:1 }}%</span>
-                {% elif linha.projecao_percentual|default:0 > 100 %}
-                    <span style="color: orange; font-weight: bold;">🔘 {{ linha.projecao_percentual|default:0|floatformat:1 }}%</span>
-                {% else %}
-                    <span style="color: green;">🟢 {{ linha.projecao_percentual|default:0|floatformat:1 }}%</span>
-                {% endif %}
-            </td>
-        </tr>
-        {% endfor %}
-    </tbody>
-</table>
-
 <script>
 function toggleDropdown() {
     const dropdown = document.getElementById("canalDropdown");
