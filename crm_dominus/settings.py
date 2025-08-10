@@ -16,6 +16,7 @@ INSTALLED_APPS = [
     'crm_dominus.apps.ativacao',
     'crm_dominus.apps.cancelamento',
     'crm_dominus.apps.metas',
+    'crm_dominus.apps.receitavendedor',
     'crm_dominus.apps.produtividade',  # <- Adicionado aqui o app com templatetags
     'diasuteis',
     'backlog',

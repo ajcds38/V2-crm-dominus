@@ -2,10 +2,12 @@ from django.shortcuts import redirect
 from django.contrib import admin
 from django.urls import path, include
 from django.contrib.auth import views as auth_views
+from django.urls import include
 from crm_dominus.apps.adesao.views_dashboard import dashboard_diaadia
 from crm_dominus.apps.saldocidades.views import saldo_cidades
 from backlog.views import backlog_instalacoes  # ✅ Nova importação
 from crm_dominus.apps.produtividade.produtividade_vendedor import produtividade_vendedor  # ✅ Caminho corrigido
+
 
 urlpatterns = [
     path('', lambda request: redirect('login/')),
@@ -20,6 +22,7 @@ urlpatterns = [
     path('dashboard/diaadia/', dashboard_diaadia, name='dashboard_diaadia'),
     path('saldo/', saldo_cidades, name='saldo_cidades'),
     path('backlog/', backlog_instalacoes, name='backlog_instalacoes'),
+    path('receita-vendedor/', include('crm_dominus.apps.receitavendedor.urls')),
 
     # ✅ Nova rota para Produtividade Vendedor
     path('produtividade-vendedor/', produtividade_vendedor, name='produtividade_vendedor'),
