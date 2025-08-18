@@ -131,8 +131,7 @@ def ativacao(request):
 
 from functools import lru_cache  # ✅ Garante que está no topo
 
-# ✅ Caminho para a base consolidada
-CAMINHO_CONSOLIDADO = os.path.join(settings.BASE_DIR, 'crm_dominus', 'apps', 'dados', 'Atualizacao_CRM.xlsx')
+CAMINHO_CONSOLIDADO = os.path.join(os.path.dirname(__file__), '..', 'dados', 'Atualizacao_CRM.xlsx')
 
 @lru_cache()
 def get_df_unificado():
@@ -153,24 +152,26 @@ def ativacao_vendedor(request):
     coordenadores_sel = [c.strip().upper() for c in request.GET.getlist('coordenador') if c.strip()]
     canais_sel = [c.strip().upper() for c in request.GET.getlist('canal') if c.strip()]
 
-    df = get_df_unificado()
-    df.columns = df.columns.str.strip().str.lower()
+    try:
+        df = get_df_unificado()
+    except Exception as e:
+        return render(request, 'ativacao/vendedor.html', {'erro': f'Erro ao carregar a base: {e}'})
 
+    df.columns = df.columns.str.strip().str.lower()
     for col in ['regional', 'coordenador', 'canal', 'vendedores']:
         if col in df.columns:
             df[col] = df[col].astype(str).str.strip().str.upper()
 
     df['canal'] = df['canal'].replace({'EXTERNO': 'PAP'})
+
     df['ativacao'] = pd.to_datetime(df['ativacao'], errors='coerce')
     df = df[df['ativacao'].notna()]
     df = df[(df['ativacao'] >= data_inicio) & (df['ativacao'] <= data_fim)]
 
-    # ⬇️ Salva listas completas antes dos filtros
     lista_regionais = sorted(df['regional'].dropna().unique())
     lista_coordenadores = sorted(df['coordenador'].dropna().unique())
     lista_canais = sorted(df['canal'].dropna().unique())
 
-    # ⬇️ Aplica filtros após capturar as listas completas
     if regionais_sel:
         df = df[df['regional'].isin(regionais_sel)]
     if coordenadores_sel:
@@ -179,40 +180,44 @@ def ativacao_vendedor(request):
         df = df[df['canal'].isin(canais_sel)]
 
     colunas_chave = ['vendedores', 'canal']
-    df_agg = df.groupby(colunas_chave).agg({
-        'receita': 'sum',
-        'regional': 'first',
-        'coordenador': 'first'
-    }).reset_index()
-    df_agg['volume'] = df.groupby(colunas_chave).size().values
-    df_agg['meta'] = 22  # ✅ Meta fixa por vendedor
 
-    dias_uteis = DiasUteis.objects.last()
-    dias_passados = dias_uteis.dias_uteis_passados if dias_uteis else 1
-    dias_restantes = dias_uteis.dias_uteis_restantes if dias_uteis else 1
-    total_dias_uteis = dias_passados + dias_restantes
+    if df.empty:
+        df_agg = pd.DataFrame(columns=colunas_chave + ['receita', 'regional', 'coordenador', 'volume', 'meta', 'projecao', 'proj_percentual', 'ticket_medio', 'produtividade', 'alerta_projecao', 'alerta_produtividade'])
+    else:
+        df_agg = df.groupby(colunas_chave).agg({
+            'receita': 'sum',
+            'regional': 'first',
+            'coordenador': 'first'
+        }).reset_index()
+        df_agg['volume'] = df.groupby(colunas_chave).size().values
+        df_agg['meta'] = 22  # Meta fixa por vendedor
 
-    df_agg['projecao'] = df_agg['volume'] if intervalo_passado else (df_agg['volume'] / dias_passados) * total_dias_uteis
-    df_agg['proj_percentual'] = (df_agg['projecao'] / df_agg['meta'].replace({0: 1})) * 100
-    df_agg['ticket_medio'] = df_agg['receita'] / df_agg['volume'].replace({0: 1})
-    df_agg['produtividade'] = df_agg['volume']
-    media_produtividade = df_agg['produtividade'].mean() if not df_agg.empty else 0
-    df_agg['alerta_produtividade'] = df_agg['produtividade'] < media_produtividade
+        dias_uteis = DiasUteis.objects.last()
+        dias_passados = dias_uteis.dias_uteis_passados if dias_uteis else 1
+        dias_restantes = dias_uteis.dias_uteis_restantes if dias_uteis else 1
+        total_dias_uteis = dias_passados + dias_restantes if (dias_passados + dias_restantes) > 0 else 1
 
-    df_agg['alerta_projecao'] = ''
-    df_agg.loc[df_agg['proj_percentual'] < 80, 'alerta_projecao'] = 'vermelho'
-    df_agg.loc[(df_agg['proj_percentual'] >= 80) & (df_agg['proj_percentual'] < 100), 'alerta_projecao'] = 'amarelo'
+        df_agg['projecao'] = df_agg['volume'] if intervalo_passado else (df_agg['volume'] / dias_passados * total_dias_uteis if dias_passados > 0 else df_agg['volume'])
+        df_agg['proj_percentual'] = (df_agg['projecao'] / df_agg['meta'].replace({0: 1})) * 100
+        df_agg['ticket_medio'] = df_agg['receita'] / df_agg['volume'].replace({0: 1})
+        df_agg['produtividade'] = df_agg['volume']
+        media_produtividade = df_agg['produtividade'].mean() if not df_agg.empty else 0
+        df_agg['alerta_produtividade'] = df_agg['produtividade'] < media_produtividade
 
-    df_agg = df_agg.sort_values(by='projecao', ascending=False)
+        df_agg['alerta_projecao'] = ''
+        df_agg.loc[df_agg['proj_percentual'] < 80, 'alerta_projecao'] = 'vermelho'
+        df_agg.loc[(df_agg['proj_percentual'] >= 80) & (df_agg['proj_percentual'] < 100), 'alerta_projecao'] = 'amarelo'
+
+        df_agg = df_agg.sort_values(by='projecao', ascending=False)
 
     context = {
         'cidades': df_agg.to_dict(orient='records'),
-        'total_meta': int(df_agg['meta'].sum()),
-        'total_realizado': int(df_agg['volume'].sum()),
-        'total_proj': int(df_agg['projecao'].sum()),
-        'total_proj_percent': f"{(df_agg['projecao'].sum() / df_agg['meta'].sum()) * 100:.2f}%" if df_agg['meta'].sum() > 0 else "0.00%",
-        'total_ticket': f"{(df_agg['receita'].sum() / df_agg['volume'].sum()):.2f}" if df_agg['volume'].sum() > 0 else "0.00",
-        'total_produtividade': f"{(df_agg['volume'].sum() / len(df_agg)):.2f}" if len(df_agg) > 0 else "0.00",
+        'total_meta': int(df_agg['meta'].sum()) if not df_agg.empty else 0,
+        'total_realizado': int(df_agg['volume'].sum()) if not df_agg.empty else 0,
+        'total_proj': int(df_agg['projecao'].sum()) if not df_agg.empty else 0,
+        'total_proj_percent': f"{(df_agg['projecao'].sum() / df_agg['meta'].sum()) * 100:.2f}%" if not df_agg.empty and df_agg['meta'].sum() > 0 else "0.00%",
+        'total_ticket': f"{(df_agg['receita'].sum() / df_agg['volume'].sum()):.2f}" if not df_agg.empty and df_agg['volume'].sum() > 0 else "0.00",
+        'total_produtividade': f"{(df_agg['volume'].sum() / len(df_agg)):.2f}" if not df_agg.empty and len(df_agg) > 0 else "0.00",
         'data_inicio': data_inicio.strftime('%Y-%m-%d'),
         'data_fim': data_fim.strftime('%Y-%m-%d'),
         'regionais': lista_regionais,
