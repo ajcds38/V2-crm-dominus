@@ -30,6 +30,7 @@ def ativacao(request):
     # Leitura das bases
     df_real = pd.read_excel(CAMINHO_REALIZADO)
     df_meta = pd.read_excel(CAMINHO_METAS)
+
     df_real.columns = df_real.columns.str.strip().str.lower()
     df_meta.columns = df_meta.columns.str.strip().str.lower()
 
@@ -64,26 +65,29 @@ def ativacao(request):
         df_meta = df_meta[df_meta['canal'].isin(canais)]
 
     colunas_chave = ['cidade', 'canal', 'regional', 'coordenador']
-    df_agg = df_real.groupby(colunas_chave).agg({
-        'receita': 'sum',
-        'vendedores': 'nunique'
-    }).reset_index()
-    df_agg['volume'] = df_real.groupby(colunas_chave).size().values
+
+    if df_real.empty:
+        df_agg = pd.DataFrame(columns=colunas_chave + ['volume', 'receita', 'vendedores'])
+    else:
+        df_agg = df_real.groupby(colunas_chave).agg({
+            'receita': 'sum',
+            'vendedores': 'nunique'
+        }).reset_index()
+        df_agg['volume'] = df_real.groupby(colunas_chave).size().values
 
     df_group = pd.merge(df_meta, df_agg, how='left', on=colunas_chave)
-
     for col in ['meta', 'volume', 'receita', 'vendedores']:
         df_group[col] = df_group.get(col, 0).fillna(0)
 
     dias_uteis = DiasUteis.objects.last()
     dias_passados = dias_uteis.dias_uteis_passados if dias_uteis else 1
     dias_restantes = dias_uteis.dias_uteis_restantes if dias_uteis else 1
-    total_dias_uteis = dias_passados + dias_restantes
+    total_dias_uteis = dias_passados + dias_restantes if dias_passados + dias_restantes > 0 else 1
 
-    df_group['projecao'] = df_group['volume'] if intervalo_passado else (df_group['volume'] / dias_passados) * total_dias_uteis
-    df_group['proj_percentual'] = (df_group['projecao'] / df_group['meta'].replace({0: 1})) * 100
-    df_group['ticket_medio'] = df_group['receita'] / df_group['volume'].replace({0: 1})
-    df_group['produtividade'] = df_group['volume'] / df_group['vendedores'].replace({0: 1})
+    df_group['projecao'] = df_group['volume'] if intervalo_passado else (df_group['volume'] / dias_passados * total_dias_uteis if dias_passados > 0 else df_group['volume'])
+    df_group['proj_percentual'] = (df_group['projecao'] / df_group['meta'].replace(0, 1)) * 100
+    df_group['ticket_medio'] = df_group['receita'] / df_group['volume'].replace(0, 1)
+    df_group['produtividade'] = df_group['volume'] / df_group['vendedores'].replace(0, 1)
     media_produtividade = df_group['produtividade'].mean() if not df_group.empty else 0
     df_group['alerta_produtividade'] = df_group['produtividade'] < media_produtividade
 
@@ -91,29 +95,31 @@ def ativacao(request):
     df_group.loc[df_group['proj_percentual'] < 80, 'alerta_projecao'] = 'vermelho'
     df_group.loc[(df_group['proj_percentual'] >= 80) & (df_group['proj_percentual'] < 100), 'alerta_projecao'] = 'amarelo'
 
-    # Filtros para dropdowns
-    df_filtros_real = pd.read_excel(CAMINHO_REALIZADO)
-    df_filtros_meta = pd.read_excel(CAMINHO_METAS)
-    df_filtros_real.columns = df_filtros_real.columns.str.strip().str.lower()
-    df_filtros_meta.columns = df_filtros_meta.columns.str.strip().str.lower()
+    # Filtros dropdown (seguros mesmo com arquivos vazios)
+    try:
+        df_filtros_real = pd.read_excel(CAMINHO_REALIZADO)
+        df_filtros_meta = pd.read_excel(CAMINHO_METAS)
+        df_filtros_real.columns = df_filtros_real.columns.str.strip().str.lower()
+        df_filtros_meta.columns = df_filtros_meta.columns.str.strip().str.lower()
 
-    for col in ['regional', 'coordenador', 'canal']:
-        if col in df_filtros_real.columns:
-            df_filtros_real[col] = df_filtros_real[col].astype(str).str.strip().str.upper()
-        if col in df_filtros_meta.columns:
-            df_filtros_meta[col] = df_filtros_meta[col].astype(str).str.strip().str.upper()
+        for col in ['regional', 'coordenador', 'canal']:
+            if col in df_filtros_real.columns:
+                df_filtros_real[col] = df_filtros_real[col].astype(str).str.strip().str.upper()
+            if col in df_filtros_meta.columns:
+                df_filtros_meta[col] = df_filtros_meta[col].astype(str).str.strip().str.upper()
 
-    df_filtros_real['canal'] = df_filtros_real['canal'].replace({'EXTERNO': 'PAP'})
-    df_filtros_meta['canal'] = df_filtros_meta['canal'].replace({'EXTERNO': 'PAP'})
-
-    df_filtros = pd.concat([df_filtros_real, df_filtros_meta], ignore_index=True)
-    filtros = {col: sorted(df_filtros[col].dropna().unique()) for col in ['regional', 'coordenador', 'canal'] if col in df_filtros}
+        df_filtros_real['canal'] = df_filtros_real['canal'].replace({'EXTERNO': 'PAP'})
+        df_filtros_meta['canal'] = df_filtros_meta['canal'].replace({'EXTERNO': 'PAP'})
+        df_filtros = pd.concat([df_filtros_real, df_filtros_meta], ignore_index=True)
+        filtros = {col: sorted(df_filtros[col].dropna().unique()) for col in ['regional', 'coordenador', 'canal'] if col in df_filtros}
+    except:
+        filtros = {'regional': [], 'coordenador': [], 'canal': []}
 
     context = {
         'cidades': df_group.to_dict(orient='records'),
-        'total_meta': int(df_group['meta'].sum()),
-        'total_realizado': int(df_group['volume'].sum()),
-        'total_proj': int(df_group['projecao'].sum()),
+        'total_meta': int(df_group['meta'].sum()) if not df_group.empty else 0,
+        'total_realizado': int(df_group['volume'].sum()) if not df_group.empty else 0,
+        'total_proj': int(df_group['projecao'].sum()) if not df_group.empty else 0,
         'total_proj_percent': f"{(df_group['projecao'].sum() / df_group['meta'].sum()) * 100:.2f}%" if df_group['meta'].sum() > 0 else "0.00%",
         'total_ticket': f"{(df_group['receita'].sum() / df_group['volume'].sum()):.2f}" if df_group['volume'].sum() > 0 else "0.00",
         'total_produtividade': f"{(df_group['volume'].sum() / df_group['vendedores'].sum()):.2f}" if df_group['vendedores'].sum() > 0 else "0.00",
@@ -128,8 +134,6 @@ def ativacao(request):
     }
 
     return render(request, 'ativacao/index.html', context)
-
-from functools import lru_cache  # ✅ Garante que está no topo
 
 CAMINHO_CONSOLIDADO = os.path.join(os.path.dirname(__file__), '..', 'dados', 'Atualizacao_CRM.xlsx')
 
