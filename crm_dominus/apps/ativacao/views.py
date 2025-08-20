@@ -54,6 +54,11 @@ def ativacao(request):
     if df_meta.empty:
         df_meta = pd.DataFrame(columns=['cidade', 'canal', 'regional', 'coordenador', 'meta'])
 
+    # Unir filtros possíveis mesmo que a base esteja vazia
+    todas_regionais = sorted(set(df_real['regional'].dropna().unique()) | set(df_meta['regional'].dropna().unique()))
+    todos_coordenadores = sorted(set(df_real['coordenador'].dropna().unique()) | set(df_meta['coordenador'].dropna().unique()))
+    todos_canais = sorted(set(df_real['canal'].dropna().unique()) | set(df_meta['canal'].dropna().unique()))
+
     if regionais:
         df_real = df_real[df_real['regional'].isin(regionais)]
         df_meta = df_meta[df_meta['regional'].isin(regionais)]
@@ -84,7 +89,9 @@ def ativacao(request):
     dias_restantes = dias_uteis.dias_uteis_restantes if dias_uteis else 1
     total_dias_uteis = dias_passados + dias_restantes if dias_passados + dias_restantes > 0 else 1
 
-    df_group['projecao'] = df_group['volume'] if intervalo_passado else (df_group['volume'] / dias_passados * total_dias_uteis if dias_passados > 0 else df_group['volume'])
+    df_group['projecao'] = df_group['volume'] if intervalo_passado else (
+        (df_group['volume'] / dias_passados) * total_dias_uteis if dias_passados > 0 else df_group['volume']
+    )
     df_group['proj_percentual'] = (df_group['projecao'] / df_group['meta'].replace(0, 1)) * 100
     df_group['ticket_medio'] = df_group['receita'] / df_group['volume'].replace(0, 1)
     df_group['produtividade'] = df_group['volume'] / df_group['vendedores'].replace(0, 1)
@@ -94,26 +101,6 @@ def ativacao(request):
     df_group['alerta_projecao'] = ''
     df_group.loc[df_group['proj_percentual'] < 80, 'alerta_projecao'] = 'vermelho'
     df_group.loc[(df_group['proj_percentual'] >= 80) & (df_group['proj_percentual'] < 100), 'alerta_projecao'] = 'amarelo'
-
-    # Filtros dropdown (seguros mesmo com arquivos vazios)
-    try:
-        df_filtros_real = pd.read_excel(CAMINHO_REALIZADO)
-        df_filtros_meta = pd.read_excel(CAMINHO_METAS)
-        df_filtros_real.columns = df_filtros_real.columns.str.strip().str.lower()
-        df_filtros_meta.columns = df_filtros_meta.columns.str.strip().str.lower()
-
-        for col in ['regional', 'coordenador', 'canal']:
-            if col in df_filtros_real.columns:
-                df_filtros_real[col] = df_filtros_real[col].astype(str).str.strip().str.upper()
-            if col in df_filtros_meta.columns:
-                df_filtros_meta[col] = df_filtros_meta[col].astype(str).str.strip().str.upper()
-
-        df_filtros_real['canal'] = df_filtros_real['canal'].replace({'EXTERNO': 'PAP'})
-        df_filtros_meta['canal'] = df_filtros_meta['canal'].replace({'EXTERNO': 'PAP'})
-        df_filtros = pd.concat([df_filtros_real, df_filtros_meta], ignore_index=True)
-        filtros = {col: sorted(df_filtros[col].dropna().unique()) for col in ['regional', 'coordenador', 'canal'] if col in df_filtros}
-    except:
-        filtros = {'regional': [], 'coordenador': [], 'canal': []}
 
     context = {
         'cidades': df_group.to_dict(orient='records'),
@@ -125,12 +112,12 @@ def ativacao(request):
         'total_produtividade': f"{(df_group['volume'].sum() / df_group['vendedores'].sum()):.2f}" if df_group['vendedores'].sum() > 0 else "0.00",
         'data_inicio': data_inicio.strftime('%Y-%m-%d'),
         'data_fim': data_fim.strftime('%Y-%m-%d'),
-        'regionais': filtros.get('regional', []),
-        'coordenadores': filtros.get('coordenador', []),
-        'canais': filtros.get('canal', []),
-        'regionais_selecionadas': request.GET.getlist('regional'),
-        'coordenadores_selecionadas': request.GET.getlist('coordenador'),
-        'canais_selecionadas': request.GET.getlist('canal'),
+        'regionais': todas_regionais,
+        'coordenadores': todos_coordenadores,
+        'canais': todos_canais,
+        'regionais_selecionadas': regionais,
+        'coordenadores_selecionadas': coordenadores,
+        'canais_selecionadas': canais,
     }
 
     return render(request, 'ativacao/index.html', context)
