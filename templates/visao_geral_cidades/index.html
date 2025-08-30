@@ -3,69 +3,81 @@
 
 <h2 class="titulo-pagina">Visão Geral — Cidades</h2>
 
-<form method="get" class="form-filtro">
-  <div class="filtros-bloco">
-    <div class="filtros-linha">
-      <div class="form-campo">
-        <label for="inicio">Início:</label>
-        <input type="date" id="inicio" name="inicio" value="{{ data_inicio }}" class="filtro-visual" autocomplete="off">
-      </div>
-      <div class="form-campo">
-        <label for="fim">Fim:</label>
-        <input type="date" id="fim" name="fim" value="{{ data_fim }}" class="filtro-visual" autocomplete="off">
-      </div>
+<!-- Barra de filtros no mesmo padrão das outras abas -->
+<form method="get" class="form-filtro" style="border:1px solid #c8a243; border-radius:10px; padding:14px; background:#0b0f16;">
+  <div class="filtros-linha" style="display:flex; gap:14px; align-items:flex-end; flex-wrap:wrap;">
+    <div class="form-campo">
+      <label for="inicio">Início:</label>
+      <input type="date" id="inicio" name="inicio" value="{{ data_inicio }}" class="filtro-visual" autocomplete="off">
+    </div>
 
-      <div class="form-campo">
-        <label for="regional">Regional:</label>
-        <select id="regional" name="regional" multiple class="filtro-visual filtro-select">
-          {% for r in regionais %}
-            <option value="{{ r }}" {% if r in regionais_selecionadas %}selected{% endif %}>{{ r }}</option>
-          {% endfor %}
-        </select>
-      </div>
+    <div class="form-campo">
+      <label for="fim">Fim:</label>
+      <input type="date" id="fim" name="fim" value="{{ data_fim }}" class="filtro-visual" autocomplete="off">
+    </div>
 
-      <div class="form-campo">
-        <label for="coordenador">Coordenador:</label>
-        <select id="coordenador" name="coordenador" multiple class="filtro-visual filtro-select">
-          {% for c in coordenadores %}
-            <option value="{{ c }}" {% if c in coordenadores_selecionadas %}selected{% endif %}>{{ c }}</option>
-          {% endfor %}
-        </select>
-      </div>
+    <div class="form-campo">
+      <label for="regional">Regional:</label>
+      <!-- seleção única com "Todas" -->
+      <select id="regional" name="regional" class="filtro-visual">
+        <option value="">Todas</option>
+        {% for r in regionais %}
+          <option value="{{ r }}" {% if regionais_selecionadas and r in regionais_selecionadas %}selected{% endif %}>{{ r }}</option>
+        {% endfor %}
+      </select>
+    </div>
 
-      <div class="form-campo">
-        <label for="canal">Canal:</label>
-        <select id="canal" name="canal" multiple class="filtro-visual filtro-select">
+    <div class="form-campo">
+      <label for="coordenador">Coordenador:</label>
+      <!-- seleção única com "Todos" -->
+      <select id="coordenador" name="coordenador" class="filtro-visual">
+        <option value="">Todos</option>
+        {% for c in coordenadores %}
+          <option value="{{ c }}" {% if coordenadores_selecionadas and c in coordenadores_selecionadas %}selected{% endif %}>{{ c }}</option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <!-- Dropdown de canais com checkboxes (igual comportamento das outras telas) -->
+    <div class="form-campo" style="position:relative;">
+      <label>Canal:</label>
+      <details style="display:inline-block;">
+        <summary class="filtro-visual" style="display:inline-block; padding:6px 10px; cursor:pointer; list-style:none;">Selecionar canais</summary>
+        <div style="position:absolute; z-index:30; background:#141922; border:1px solid #2b3240; padding:10px; border-radius:8px; margin-top:6px; max-height:260px; overflow:auto; min-width:220px;">
           {% for c in canais %}
-            <option value="{{ c }}" {% if c in canais_selecionadas %}selected{% endif %}>{{ c }}</option>
+            <label style="display:flex; gap:8px; align-items:center; margin-bottom:6px; color:#e7e7e7;">
+              <input type="checkbox" name="canal" value="{{ c }}" {% if canais_selecionadas and c in canais_selecionadas %}checked{% endif %}>
+              <span>{{ c }}</span>
+            </label>
           {% endfor %}
-        </select>
-      </div>
+        </div>
+      </details>
+    </div>
 
-      <div class="form-campo">
-        <button type="submit" class="btn-aplicar">Aplicar</button>
-      </div>
+    <div class="form-campo" style="margin-left:auto;">
+      <button type="submit" class="btn-aplicar">Filtrar</button>
     </div>
   </div>
 </form>
 
+<p style="margin:10px 0 6px 2px;">Período: <strong>{{ data_inicio }}</strong> até <strong>{{ data_fim }}</strong></p>
+
 <style>
-  .tbl { width:100%; border-collapse:collapse; background:#fff; border-radius:10px; overflow:hidden; }
-  .tbl th, .tbl td { border:1px solid #e6e6e6; padding:8px 10px; text-align:center; }
-  .tbl th { background:#0b2e57; color:#fff; font-weight:700; }
+  /* Tabela no tema escuro + cabeçalho dourado (padrão das outras telas) */
+  .tbl { width:100%; border-collapse:collapse; background:#0f141d; border-radius:10px; overflow:hidden; }
+  .tbl th, .tbl td { border:1px solid #2b3240; padding:8px 10px; text-align:center; color:#e7e7e7; }
+  .tbl th { background:#c8a243; color:#141922; font-weight:700; }
   .aln-left { text-align:left; }
-  .linha-total td { background:#f4e08b; font-weight:700; }
+  .linha-total td { background:#f4e08b; color:#141922; font-weight:700; }
   .pct { white-space:nowrap; }
 
   /* ALERTAS: só amarelo/vermelho */
-  .alerta-amarelo { background:#fff6cc; animation:pulse 1.2s ease-in-out infinite alternate; }
-  .alerta-vermelho { background:#ffd6d6; animation:pulse 1s ease-in-out infinite alternate; }
+  .alerta-amarelo { background:#fff6cc33; animation:pulse 1.2s ease-in-out infinite alternate; }
+  .alerta-vermelho { background:#ff6b6b33; animation:pulse 1s ease-in-out infinite alternate; }
   @keyframes pulse { from { filter:brightness(100%);} to { filter:brightness(95%);} }
 
   /* Estado vazio */
-  .empty-state {
-    margin-top: 14px; padding: 12px 14px; border: 1px dashed #ccc; border-radius: 8px; background: #fafafa;
-  }
+  .empty-state { margin-top: 14px; padding: 12px 14px; border: 1px dashed #444; border-radius: 8px; background: #0f141d; color:#c9c9c9; }
 </style>
 
 {% if tabela and tabela|length > 0 %}
