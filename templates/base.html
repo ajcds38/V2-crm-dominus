@@ -22,9 +22,13 @@
             <li><a href="/cancelamento/">Cancelamento</a></li>
             <li><a href="/diasuteis/">Dias Úteis</a></li>
             <li><a href="/dashboard/diaadia/">Dashboard Resultados</a></li>
+
+            <!-- ✅ Nova aba Visão Geral – Cidades -->
+            <li><a href="{% url 'visao_geral_cidades:index' %}">Visão Geral - Cidades</a></li>
+
             <li><a href="{% url 'saldo_cidades' %}">Saldo Cidades</a></li>
             <li><a href="{% url 'backlog_instalacoes' %}">Backlog Instalações</a></li>
-            <li><a href="{% url 'produtividade_vendedor' %}">Produtividade Vendedor</a></li> <!-- ✅ Adicionado -->
+            <li><a href="{% url 'produtividade_vendedor' %}">Produtividade Vendedor</a></li>
             <li><a href="{% url 'receita_vendedor' %}">Receita por Vendedor - Ativações</a></li>
         </ul>
     </div>

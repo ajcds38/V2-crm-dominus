@@ -1,0 +1,123 @@
+{% extends 'base.html' %}
+{% block content %}
+
+<h2 class="titulo-pagina">Visão Geral — Cidades</h2>
+
+<form method="get" class="form-filtro">
+  <div class="filtros-bloco">
+    <div class="filtros-linha">
+      <div class="form-campo">
+        <label for="inicio">Início:</label>
+        <input type="date" id="inicio" name="inicio" value="{{ data_inicio }}" class="filtro-visual" autocomplete="off">
+      </div>
+      <div class="form-campo">
+        <label for="fim">Fim:</label>
+        <input type="date" id="fim" name="fim" value="{{ data_fim }}" class="filtro-visual" autocomplete="off">
+      </div>
+
+      <div class="form-campo">
+        <label for="regional">Regional:</label>
+        <select id="regional" name="regional" multiple class="filtro-visual filtro-select">
+          {% for r in regionais %}
+            <option value="{{ r }}" {% if r in regionais_selecionadas %}selected{% endif %}>{{ r }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="form-campo">
+        <label for="coordenador">Coordenador:</label>
+        <select id="coordenador" name="coordenador" multiple class="filtro-visual filtro-select">
+          {% for c in coordenadores %}
+            <option value="{{ c }}" {% if c in coordenadores_selecionadas %}selected{% endif %}>{{ c }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="form-campo">
+        <label for="canal">Canal:</label>
+        <select id="canal" name="canal" multiple class="filtro-visual filtro-select">
+          {% for c in canais %}
+            <option value="{{ c }}" {% if c in canais_selecionadas %}selected{% endif %}>{{ c }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="form-campo">
+        <button type="submit" class="btn-aplicar">Aplicar</button>
+      </div>
+    </div>
+  </div>
+</form>
+
+<style>
+  .tbl { width:100%; border-collapse:collapse; background:#fff; border-radius:10px; overflow:hidden; }
+  .tbl th, .tbl td { border:1px solid #e6e6e6; padding:8px 10px; text-align:center; }
+  .tbl th { background:#0b2e57; color:#fff; font-weight:700; }
+  .aln-left { text-align:left; }
+  .linha-total td { background:#f4e08b; font-weight:700; }
+  .pct { white-space:nowrap; }
+
+  /* ALERTAS: só amarelo/vermelho */
+  .alerta-amarelo { background:#fff6cc; animation:pulse 1.2s ease-in-out infinite alternate; }
+  .alerta-vermelho { background:#ffd6d6; animation:pulse 1s ease-in-out infinite alternate; }
+  @keyframes pulse { from { filter:brightness(100%);} to { filter:brightness(95%);} }
+
+  /* Estado vazio */
+  .empty-state {
+    margin-top: 14px; padding: 12px 14px; border: 1px dashed #ccc; border-radius: 8px; background: #fafafa;
+  }
+</style>
+
+{% if tabela and tabela|length > 0 %}
+<table class="tbl">
+  <thead>
+    <tr>
+      <th rowspan="2">Cidade</th>
+      <th colspan="4">Adesão</th>
+      <th colspan="4">Ativação</th>
+    </tr>
+    <tr>
+      <th>Meta</th><th>Realizado</th><th>Projeção</th><th>Projeção %</th>
+      <th>Meta</th><th>Realizado</th><th>Projeção</th><th>Projeção %</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for r in tabela %}
+      <tr>
+        <td class="aln-left">{{ r.cidade }}</td>
+
+        <td>{{ r.meta_adesao }}</td>
+        <td>{{ r.realizado_adesao }}</td>
+        <td>{{ r.proj_adesao|floatformat:0 }}</td>
+        <td class="pct {{ r.cls_adesao }}">{{ r.proj_adesao_pct|floatformat:2 }}%</td>
+
+        <td>{{ r.meta_ativacao }}</td>
+        <td>{{ r.realizado_ativacao }}</td>
+        <td>{{ r.proj_ativacao|floatformat:0 }}</td>
+        <td class="pct {{ r.cls_ativ }}">{{ r.proj_ativacao_pct|floatformat:2 }}%</td>
+      </tr>
+    {% endfor %}
+  </tbody>
+
+  <tfoot>
+    <tr class="linha-total">
+      <td class="aln-left">Total</td>
+      <td>{{ total_meta_adesao }}</td>
+      <td>{{ total_realizado_adesao }}</td>
+      <td>{{ total_proj_adesao }}</td>
+      <td>{{ total_proj_pct_adesao }}</td>
+
+      <td>{{ total_meta_ativacao }}</td>
+      <td>{{ total_realizado_ativacao }}</td>
+      <td>{{ total_proj_ativacao }}</td>
+      <td>{{ total_proj_pct_ativacao }}</td>
+    </tr>
+  </tfoot>
+</table>
+{% else %}
+  <div class="empty-state">
+    Nenhum dado encontrado com os filtros atuais. Ajuste os filtros e aplique novamente.
+  </div>
+{% endif %}
+
+{% endblock %}
