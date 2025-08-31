@@ -5,7 +5,7 @@
 
 <!-- Barra de filtros no mesmo padrão das outras abas -->
 <form method="get" class="form-filtro" style="border:1px solid #c8a243; border-radius:10px; padding:14px; background:#0b0f16;">
-  <div class="filtros-linha" style="display:flex; gap:14px; align-items:flex-end; flex-wrap:wrap;">
+  <div class="filtros-linha" style="display:flex; gap:14px; align-items:flex-end; flex-wrap:wrap; justify-content:center;">
     <div class="form-campo">
       <label for="inicio">Início:</label>
       <input type="date" id="inicio" name="inicio" value="{{ data_inicio }}" class="filtro-visual" autocomplete="off">
@@ -69,7 +69,7 @@
   }
   .btn-aplicar:hover{ filter:brightness(1.05); }
 
-  /* Dropdown de Canais */
+  /* Dropdown de Canais (AGORA EM DUAS COLUNAS) */
   .btn-canais{
     display:inline-block; padding:6px 10px; min-width:180px;
     background:#0b0f16; color:#e7e7e7;
@@ -78,10 +78,11 @@
   .dropdown-canais .menu-canais{
     display:none; position:absolute; top:38px; left:0; z-index:40;
     background:#141922; border:1px solid #2b3240; border-radius:8px;
-    padding:10px; max-height:260px; overflow:auto; min-width:220px;
+    padding:10px; max-height:280px; overflow:auto; min-width:420px;
+    grid-template-columns:1fr 1fr; column-gap:18px; row-gap:6px;
   }
-  .dropdown-canais.open .menu-canais{ display:block; }
-  .item-canal{ display:flex; gap:8px; align-items:center; margin-bottom:6px; color:#e7e7e7; }
+  .dropdown-canais.open .menu-canais{ display:grid; }
+  .item-canal{ display:flex; gap:8px; align-items:center; color:#e7e7e7; }
 
   /* Tabela no tema escuro + cabeçalho dourado */
   .tbl { width:100%; border-collapse:collapse; background:#0f141d; border-radius:10px; overflow:hidden; }
@@ -91,9 +92,10 @@
   .linha-total td { background:#f4e08b; color:#141922; font-weight:700; }
   .pct { white-space:nowrap; }
 
-  /* ALERTAS: só amarelo/vermelho */
-  .alerta-amarelo { background:#fff6cc33; animation:pulse 1.2s ease-in-out infinite alternate; }
-  .alerta-vermelho { background:#ff6b6b33; animation:pulse 1s ease-in-out infinite alternate; }
+  /* ALERTAS: AMARELO (80–99,99%) E VERMELHO (<80%) — com cor forte e prioridade */
+  .tbl td.alerta-amarelo, .pct.alerta-amarelo{ background:#ffe08a !important; color:#141922; }
+  .tbl td.alerta-vermelho, .pct.alerta-vermelho{ background:#ffb3b3 !important; color:#141922; }
+
   @keyframes pulse { from { filter:brightness(100%);} to { filter:brightness(95%);} }
 
   /* Estado vazio */
