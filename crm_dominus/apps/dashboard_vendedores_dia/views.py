@@ -93,4 +93,5 @@ def diarias_vendedor(request):
         'coordenadores': coordenadores_disponiveis,
         'coordenadores_selecionadas': [coordenador] if coordenador else [],
     }
-    return render(request, 'diarias/index.html', context)
+    # ✅ Opção A: renderizando no caminho da sua pasta
+    return render(request, 'dashboard_vendedores_dia/index.html', context)
