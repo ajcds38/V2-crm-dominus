@@ -78,11 +78,13 @@ def diarias_vendedor(request):
         tabela_dia = tabela_dia.reindex(columns=colunas_dias, fill_value=0)
         df_tabela = tabela_dia.sort_index()
         df_tabela.index = df_tabela.index.str.upper()
+
     if df_tabela.shape[1] > 0:
         df_tabela.loc['Total Realizado'] = df_tabela.sum(axis=0)
 
     context = {
-        'tabela': df_tabela.reset_index().rename(columns={'index': 'vendedor'}).to_dict(orient='records'),
+        # 🔧 Corrigido: garantir que a coluna do nome saia como "vendedor"
+        'tabela': df_tabela.reset_index().rename(columns={'vendedores': 'vendedor'}).to_dict(orient='records'),
         'colunas_dias': colunas_dias,
         'data_inicio': data_inicio.strftime('%Y-%m-%d'),
         'data_fim': data_fim.strftime('%Y-%m-%d'),
@@ -93,5 +95,5 @@ def diarias_vendedor(request):
         'coordenadores': coordenadores_disponiveis,
         'coordenadores_selecionadas': [coordenador] if coordenador else [],
     }
-    # ✅ Opção A: renderizando no caminho da sua pasta
+    # Renderiza o template na pasta correta
     return render(request, 'dashboard_vendedores_dia/index.html', context)
