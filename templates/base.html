@@ -23,8 +23,21 @@
             <li><a href="/diasuteis/">Dias Úteis</a></li>
             <li><a href="/dashboard/diaadia/">Dashboard Resultados</a></li>
 
-            <!-- ✅ Nova aba Visão Geral – Cidades -->
-            <li><a href="{% url 'visao_geral_cidades:index' %}">Visão Geral - Cidades</a></li>
+            <!-- ✅ Visão Geral – Cidades -->
+            <li>
+              <a href="{% url 'visao_geral_cidades:index' %}"
+                 style="{% if request.path|slice:':20' == '/visao-geral-cidades' %}font-weight:700;color:#f4e08b;{% endif %}">
+                 Visão Geral - Cidades
+              </a>
+            </li>
+
+            <!-- ✅ NOVO: Visão Geral – Vendedores -->
+            <li>
+              <a href="{% url 'visao_geral_vendedores:index' %}"
+                 style="{% if request.path|slice:':23' == '/visao-geral-vendedores' %}font-weight:700;color:#f4e08b;{% endif %}">
+                 Visão Geral - Vendedores
+              </a>
+            </li>
 
             <li><a href="{% url 'saldo_cidades' %}">Saldo Cidades</a></li>
             <li><a href="{% url 'backlog_instalacoes' %}">Backlog Instalações</a></li>

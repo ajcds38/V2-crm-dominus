@@ -23,6 +23,7 @@ urlpatterns = [
     path('receita-vendedor/', include('crm_dominus.apps.receitavendedor.urls')),
     path('produtividade-vendedor/', produtividade_vendedor, name='produtividade_vendedor'),
 
-    # ✅ Nova rota modular para Visão Geral – Cidades
+    # ✅ Rotas modulares
     path('visao-geral-cidades/', include('crm_dominus.apps.visao_geral_cidades.urls')),
+    path('visao-geral-vendedores/', include('crm_dominus.apps.visao_geral_vendedores.urls')),  # 🔥 Nova rota
 ]
