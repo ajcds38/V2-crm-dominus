@@ -78,10 +78,11 @@
     <tbody>
         {% for linha in tabela %}
         {% if linha.vendedor == 'Total Realizado' %}
+        <!-- Linha de Total com texto PRETO em todas as células -->
         <tr style="background-color: #b8923a; color: black; font-weight: bold;">
-            <td><strong>{{ linha.vendedor }}</strong></td>
+            <td style="color:black;"><strong>{{ linha.vendedor }}</strong></td>
             {% for dia in colunas_dias %}
-                <td><strong>{{ linha|get_item:dia|default:0|floatformat:0 }}</strong></td>
+                <td style="color:black;"><strong>{{ linha|get_item:dia|default:0|floatformat:0 }}</strong></td>
             {% endfor %}
         </tr>
         {% else %}
