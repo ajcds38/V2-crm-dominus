@@ -17,13 +17,23 @@
         <ul style="list-style: none; padding: 0; color: white;">
             <li><a href="/adesao/cidade/">Adesão</a></li>
             <li><a href="/ativacao/">Ativação</a></li>
-            <!-- ✅ NOVO: Visão Geral – Vendedores -->
+
+            <!-- ✅ Visão Geral – Vendedores -->
             <li>
               <a href="{% url 'visao_geral_vendedores:index' %}"
                  style="{% if request.path|slice:':23' == '/visao-geral-vendedores' %}font-weight:700;color:#f4e08b;{% endif %}">
                  Visão Geral - Vendedores
               </a>
             </li>
+
+            <!-- ✅ NOVO: Diárias (Vendedores dia a dia) -->
+            <li>
+              <a href="{% url 'dashboard_vendedores_dia:index' %}"
+                 style="{% if request.path|slice:':8' == '/diarias' %}font-weight:700;color:#f4e08b;{% endif %}">
+                 Diárias
+              </a>
+            </li>
+
             <li><a href="/cancelamento/">Cancelamento</a></li>
             <li><a href="/diasuteis/">Dias Úteis</a></li>
             <li><a href="/dashboard/diaadia/">Dashboard Resultados</a></li>
