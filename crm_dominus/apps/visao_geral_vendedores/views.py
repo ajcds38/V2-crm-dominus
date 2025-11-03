@@ -6,6 +6,7 @@ import os
 from django.conf import settings
 from diasuteis.models import DiasUteis
 from functools import lru_cache
+import numpy as np  # <- usado para evitar divisão por zero
 
 # === CAMINHOS (reaproveita os seus) ===
 CAMINHO_REALIZADO = os.path.join(settings.BASE_DIR, 'crm_dominus', 'apps', 'dados', 'Atualizacao_CRM.xlsx')
@@ -120,7 +121,7 @@ def visao_geral_vendedores(request):
         tbl['proj_adesao'] = (tbl['realizado_adesao'] / base_div) * total_dias_uteis
         tbl['proj_ativacao'] = (tbl['realizado_ativacao'] / base_div) * total_dias_uteis
 
-    # % projeção
+    # % projeção (por linha, em número)
     tbl['proj_adesao_pct']   = (tbl['proj_adesao']   / tbl['meta_adesao'].replace({0:1})) * 100
     tbl['proj_ativacao_pct'] = (tbl['proj_ativacao'] / tbl['meta_ativacao'].replace({0:1})) * 100
 
@@ -135,7 +136,15 @@ def visao_geral_vendedores(request):
     tbl['cls_adesao'] = tbl['proj_adesao_pct'].apply(cls_alerta)
     tbl['cls_ativ']   = tbl['proj_ativacao_pct'].apply(cls_alerta)
 
-    # ✅ ORDENAR: maior → menor Projeção % de Ativação
+    # === NOVO: Aproveitamento por vendedor (Ativação ÷ Adesão) ===
+    # Guardamos como percentual (0–100). Se adesão = 0, fica NaN.
+    tbl['aproveitamento'] = np.where(
+        tbl['realizado_adesao'] > 0,
+        (tbl['realizado_ativacao'] / tbl['realizado_adesao']) * 100.0,
+        np.nan
+    )
+
+    # ✅ ORDENAR: maior → menor Projeção % de Ativação (mantido)
     tbl = tbl.sort_values(by='proj_ativacao_pct', ascending=False)
 
     # Totais
@@ -152,6 +161,9 @@ def visao_geral_vendedores(request):
     total_proj_pct_adesao = (total_proj_adesao / total_meta_adesao * 100) if total_meta_adesao > 0 else 0.0
     total_proj_pct_ativ   = (total_proj_ativacao / total_meta_ativacao * 100) if total_meta_ativacao > 0 else 0.0
 
+    # === NOVO: Aproveitamento Total (Ativação ÷ Adesão no agregado) ===
+    total_aproveitamento_pct = (total_realizado_ativacao / total_realizado_adesao * 100.0) if total_realizado_adesao > 0 else 0.0
+
     context = {
         'tabela': tbl.rename(columns={'vendedores': 'vendedor'}).to_dict(orient='records'),
 
@@ -164,6 +176,9 @@ def visao_geral_vendedores(request):
         'total_realizado_ativacao': total_realizado_ativacao,
         'total_proj_ativacao': int(round(total_proj_ativacao)),
         'total_proj_pct_ativacao': f"{total_proj_pct_ativ:.2f}%",
+
+        # === NOVO: total de aproveitamento para exibir no rodapé
+        'total_aproveitamento_pct': f"{total_aproveitamento_pct:.2f}%",
 
         'data_inicio': data_inicio.strftime('%Y-%m-%d'),
         'data_fim': data_fim.strftime('%Y-%m-%d'),

@@ -3,7 +3,7 @@
 
 <h2 class="titulo-pagina">Visão Geral — Vendedores</h2>
 
-<!-- Barra de filtros no mesmo padrão das outras abas -->
+<!-- Barra de filtros -->
 <form method="get" class="form-filtro" style="border:1px solid #c8a243; border-radius:10px; padding:14px; background:#0b0f16;">
   <div class="filtros-linha" style="display:flex; gap:14px; align-items:flex-end; flex-wrap:wrap; justify-content:center;">
     <div class="form-campo">
@@ -18,7 +18,6 @@
 
     <div class="form-campo">
       <label for="regional">Regional:</label>
-      <!-- seleção única com "Todas" -->
       <select id="regional" name="regional" class="filtro-visual">
         <option value="">Todas</option>
         {% for r in regionais %}
@@ -29,7 +28,6 @@
 
     <div class="form-campo">
       <label for="coordenador">Coordenador:</label>
-      <!-- seleção única com "Todos" -->
       <select id="coordenador" name="coordenador" class="filtro-visual">
         <option value="">Todos</option>
         {% for c in coordenadores %}
@@ -38,7 +36,7 @@
       </select>
     </div>
 
-    <!-- Dropdown de Canais com checkboxes (mesmo comportamento das outras telas) -->
+    <!-- Dropdown de canais -->
     <div class="form-campo dropdown-canais" style="position:relative;">
       <label>Canal:</label>
       <button type="button" class="filtro-visual btn-canais">Selecionar canais</button>
@@ -53,27 +51,23 @@
     </div>
 
     <div class="form-campo">
-      <!-- Botão Filtrar padrão dourado -->
       <input type="submit" class="btn-aplicar" value="Filtrar">
     </div>
   </div>
 </form>
 
 <p style="margin:10px 0 6px 2px;">
-  Período: <strong>{{ data_inicio }}</strong> até <strong>{{ data_fim }}</strong>
-  <br>
+  Período: <strong>{{ data_inicio }}</strong> até <strong>{{ data_fim }}</strong><br>
   <small style="opacity:.8;">Metas fixas: <strong>Adesão 25</strong> | <strong>Ativação 22</strong> por vendedor</small>
 </p>
 
 <style>
-  /* Botão Filtrar (garantia visual caso o CSS global não carregue) */
   .btn-aplicar{
     background:#c8a243; color:#141922; border:none; padding:8px 16px;
     border-radius:8px; cursor:pointer; font-weight:700;
   }
   .btn-aplicar:hover{ filter:brightness(1.05); }
 
-  /* Dropdown de Canais (DUAS COLUNAS) */
   .btn-canais{
     display:inline-block; padding:6px 10px; min-width:180px;
     background:#0b0f16; color:#c8a243;
@@ -88,7 +82,6 @@
   .dropdown-canais.open .menu-canais{ display:grid; }
   .item-canal{ display:flex; gap:8px; align-items:center; color:#e7e7e7; }
 
-  /* Tabela no tema escuro + cabeçalho dourado */
   .tbl { width:100%; border-collapse:collapse; background:#0f141d; border-radius:10px; overflow:hidden; }
   .tbl th, .tbl td { border:1px solid #2b3240; padding:8px 10px; text-align:center; color:#e7e7e7; }
   .tbl th { background:#c8a243; color:#141922; font-weight:700; }
@@ -96,14 +89,12 @@
   .linha-total td { background:#f4e08b; color:#141922; font-weight:700; }
   .pct { white-space:nowrap; }
 
-  /* ALERTAS: amarelo 80–99,99% e vermelho <80% (cores sólidas) */
   .tbl td.alerta-amarelo, .pct.alerta-amarelo{ background:#ffe08a !important; color:#141922; }
   .tbl td.alerta-vermelho, .pct.alerta-vermelho{ background:#ffb3b3 !important; color:#141922; }
 
   @keyframes pulse { from { filter:brightness(100%);} to { filter:brightness(95%);} }
 
-  /* Estado vazio */
-  .empty-state { margin-top: 14px; padding: 12px 14px; border: 1px dashed #444; border-radius: 8px; background: #0f141d; color:#c9c9c9; }
+  .empty-state { margin-top:14px; padding:12px 14px; border:1px dashed #444; border-radius:8px; background:#0f141d; color:#c9c9c9; }
 </style>
 
 {% if tabela and tabela|length > 0 %}
@@ -113,6 +104,7 @@
       <th rowspan="2">Vendedor</th>
       <th colspan="4">Adesão</th>
       <th colspan="4">Ativação</th>
+      <th rowspan="2">Aproveitamento</th>
     </tr>
     <tr>
       <th>Meta</th><th>Realizado</th><th>Projeção</th><th>Projeção %</th>
@@ -133,6 +125,14 @@
         <td>{{ r.realizado_ativacao }}</td>
         <td>{{ r.proj_ativacao|floatformat:0 }}</td>
         <td class="pct {{ r.cls_ativ }}">{{ r.proj_ativacao_pct|floatformat:2 }}%</td>
+
+        <td class="pct">
+          {% if r.aproveitamento %}
+            {{ r.aproveitamento|floatformat:2 }}%
+          {% else %}
+            -
+          {% endif %}
+        </td>
       </tr>
     {% endfor %}
   </tbody>
@@ -149,6 +149,8 @@
       <td>{{ total_realizado_ativacao }}</td>
       <td>{{ total_proj_ativacao }}</td>
       <td>{{ total_proj_pct_ativacao }}</td>
+
+      <td>{{ total_aproveitamento_pct }}</td>
     </tr>
   </tfoot>
 </table>
@@ -158,7 +160,6 @@
   </div>
 {% endif %}
 
-<!-- JS para abrir/fechar o dropdown de canais -->
 <script>
   (function(){
     const dd = document.querySelector('.dropdown-canais');
